@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Portfolio AI Insights — Executive Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&family=Cascadia+Code:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --blue:#0078D4;--blue-d:#005A9E;--blue-l:#C7E0F4;--blue-xl:#EFF6FC;
+  --navy:#003B73;--teal:#008575;
+  --bg:#F8F8F7;--surface:#FFF;--surface2:#FAF9F8;
+  --border:#E8E6E3;--border-d:#C8C6C4;
+  --text:#1A1A1A;--text2:#505050;--muted:#9A9A9A;
+  --green:#107C10;--green-bg:#DFF6DD;--green-d:#004B1C;
+  --amber:#D83B01;--amber-bg:#FFF4CE;--amber-d:#7A2000;
+  --red:#A4262C;--red-bg:#FDE7E9;--red-d:#6E0811;
+  --purple:#5C2D91;--purple-bg:#EDE0FF;
+  --ai:#0F5C8A;--ai-bg:#E6F2FB;--ai-l:#9DD0F0;
+  --font:'Segoe UI',system-ui,sans-serif;
+  --mono:'Cascadia Code','Consolas',monospace;
+  --r:6px;--rl:10px;
+  --sh:0 1px 4px rgba(0,0,0,.08),0 .5px 1px rgba(0,0,0,.06);
+  --sh2:0 4px 16px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08);
+}
+
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,124,16,.3)}50%{opacity:.8;box-shadow:0 0 0 4px rgba(16,124,16,0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes expandIn{from{opacity:0;max-height:0}to{opacity:1;max-height:800px}}
+@keyframes typeDot{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--sh)}
+.tb-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.tb-back{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--blue);cursor:pointer;border:none;background:none;font-family:var(--font);padding:4px 8px;border-radius:var(--r);transition:background .15s}
+.tb-back:hover{background:var(--blue-xl)}
+.tb-divider{width:1px;height:20px;background:var(--border-d)}
+.tb-title{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.tb-sub{font-size:11px;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:10px}
+.agent-status{display:flex;align-items:center;gap:7px;background:var(--green-bg);border:1px solid #A7D7A7;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;color:var(--green)}
+.agent-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.tb-bti{width:32px;height:32px;border:1px solid var(--border-d);border-radius:var(--r);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text2);transition:all .15s}
+.tb-bti:hover{background:var(--blue-xl);border-color:var(--blue);color:var(--blue)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;max-width:1140px;width:100%;margin:0 auto;padding:0 24px 130px}
+
+/* ── AGENT HEADER ── */
+.agent-header{padding:28px 0 20px;display:flex;align-items:flex-start;gap:16px;animation:fadeUp .4s ease}
+.agent-avatar{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#003B73,#0078D4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,58,108,.3)}
+.agent-name{font-size:18px;font-weight:700;color:var(--text);margin-bottom:2px}
+.agent-context{font-size:13px;color:var(--text2);margin-bottom:10px}
+.agent-summary{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--text2);line-height:1.7;box-shadow:var(--sh)}
+.agent-summary strong{color:var(--text)}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;animation:fadeUp .4s .05s ease both}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--sh);cursor:pointer;transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.ok::before{background:var(--green)}
+.kpi.warn::before{background:var(--amber)}
+.kpi.alert::before{background:var(--red)}
+.kpi.blue::before{background:var(--blue)}
+.kpi.ai::before{background:linear-gradient(90deg,#003B73,#0078D4)}
+.kpi:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.kpi-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.kpi-val{font-size:24px;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi.ok .kpi-val{color:var(--green)}.kpi.warn .kpi-val{color:var(--amber)}.kpi.alert .kpi-val{color:var(--red)}.kpi.blue .kpi-val{color:var(--blue)}.kpi.ai .kpi-val{color:var(--navy)}
+.kpi-trend{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600}
+.kpi-trend.up{color:var(--green)}.kpi-trend.down{color:var(--red)}.kpi-trend.flat{color:var(--muted)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi-bar{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px}
+.kpi.ok .kpi-bar-fill{background:var(--green)}.kpi.warn .kpi-bar-fill{background:var(--amber)}.kpi.alert .kpi-bar-fill{background:var(--red)}.kpi.blue .kpi-bar-fill{background:var(--blue)}.kpi.ai .kpi-bar-fill{background:linear-gradient(90deg,#003B73,#0078D4)}
+
+/* ── AI BAND ── */
+.ai-band{background:linear-gradient(135deg,#003B73 0%,#005A9E 55%,#0078D4 100%);border-radius:var(--rl);padding:22px 26px;margin-bottom:20px;color:white;animation:fadeUp .4s .1s ease both;position:relative;overflow:hidden}
+.ai-band::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04)}
+.ai-band::after{content:'';position:absolute;bottom:-30px;right:80px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.04)}
+.ai-band-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ai-band-icon{font-size:18px}
+.ai-band-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.65}
+.ai-band-text{font-size:14px;line-height:1.75;opacity:.95;max-width:900px}
+.ai-band-text strong{color:#A8D4F0}
+
+/* ── THREE-COL GRID ── */
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;animation:fadeUp .4s .15s ease both}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;animation:fadeUp .4s .2s ease both}
+.one-col{margin-bottom:16px;animation:fadeUp .4s .25s ease both}
+
+/* ── PANEL ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden}
+.panel-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.panel-hdr-icon{font-size:16px;flex-shrink:0}
+.panel-title{font-size:12px;font-weight:700;color:var(--text);flex:1;text-transform:uppercase;letter-spacing:.5px}
+.panel-count{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
+.panel-count.red{background:var(--red)}.panel-count.blue{background:var(--blue)}.panel-count.green{background:var(--green)}.panel-count.amber{background:var(--amber)}.panel-count.navy{background:var(--navy)}
+.panel-body{padding:0}
+.show-more{display:block;padding:10px 18px;font-size:12px;font-weight:600;color:var(--blue);cursor:pointer;border-top:1px solid var(--border);text-align:left;transition:background .15s;border:none;background:none;width:100%;font-family:var(--font)}
+.show-more:hover{background:var(--blue-xl)}
+
+/* ── INSIGHT ITEM ── */
+.insight-item{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative}
+.insight-item:last-child{border-bottom:none}
+.insight-item:hover{background:#FAFAF9}
+.insight-item.expanded{background:var(--surface2)}
+.ii-top{display:flex;align-items:flex-start;gap:10px}
+.ii-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ii-dot.red{background:var(--red)}.ii-dot.amber{background:var(--amber)}.ii-dot.blue{background:var(--blue)}.ii-dot.green{background:var(--green)}.ii-dot.navy{background:var(--navy)}.ii-dot.ai{background:linear-gradient(135deg,var(--navy),var(--blue))}
+.ii-content{flex:1;min-width:0}
+.ii-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:3px}
+.ii-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
+.ii-tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.tag.urgent{background:var(--red-bg);color:var(--red);border:1px solid #F3BCBE}
+.tag.warn{background:var(--amber-bg);color:#7A3000;border:1px solid #F0D980}
+.tag.info{background:var(--blue-xl);color:var(--blue-d);border:1px solid var(--blue-l)}
+.tag.ok{background:var(--green-bg);color:var(--green-d);border:1px solid #A7D7A7}
+.tag.ai{background:var(--ai-bg);color:var(--ai);border:1px solid var(--ai-l)}
+.tag.navy{background:#E6EEF8;color:var(--navy);border:1px solid #B0C8E4}
+.tag.purple{background:var(--purple-bg);color:var(--purple);border:1px solid #C9AAFF}
+.ii-chevron{font-size:12px;color:var(--muted);flex-shrink:0;margin-top:3px;transition:transform .2s}
+.ii-chevron.open{transform:rotate(90deg)}
+
+/* ── DRILL DOWN ── */
+.drill-panel{display:none;margin:0 18px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;animation:expandIn .25s ease}
+.drill-panel.open{display:block}
+.drill-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.drill-section:last-child{border-bottom:none}
+.drill-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.drill-stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.drill-stat-row.three{grid-template-columns:repeat(3,1fr)}
+.drill-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.drill-stat-label{font-size:10px;color:var(--muted);margin-bottom:3px}
+.drill-stat-val{font-size:17px;font-weight:700;color:var(--text)}
+.drill-stat-val.red{color:var(--red)}.drill-stat-val.amber{color:var(--amber)}.drill-stat-val.green{color:var(--green)}.drill-stat-val.blue{color:var(--blue)}.drill-stat-val.navy{color:var(--navy)}
+
+/* ── PROJECT TABLE ── */
+.proj-table{width:100%;border-collapse:collapse}
+.proj-table th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface2)}
+.proj-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle}
+.proj-table tr:last-child td{border-bottom:none}
+.proj-table tr:hover td{background:#F5F4F2}
+.pb-sm{width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle}
+.pb-sm-fill{height:100%;border-radius:3px}
+.pb-sm-fill.g{background:var(--green)}.pb-sm-fill.a{background:var(--amber)}.pb-sm-fill.r{background:var(--red)}
+.rag-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.rag-g{background:var(--green)}.rag-a{background:var(--amber)}.rag-r{background:var(--red)}
+
+/* ── RECOMMENDATION BOX ── */
+.rec-box{background:linear-gradient(135deg,#E6F0FA,#EFF6FC);border:1px solid var(--blue-l);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--blue-d);line-height:1.65}
+.rec-box strong{color:var(--navy)}
+.drill-actions{display:flex;gap:8px;padding-top:4px;flex-wrap:wrap}
+.drill-btn{padding:5px 12px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);border:none;transition:all .15s}
+.drill-btn.primary{background:var(--navy);color:white}
+.drill-btn.primary:hover{background:#002856}
+.drill-btn.blue{background:var(--blue);color:white}
+.drill-btn.blue:hover{background:var(--blue-d)}
+.drill-btn.ghost{background:var(--surface);color:var(--text2);border:1px solid var(--border-d)}
+.drill-btn.ghost:hover{background:var(--surface2)}
+
+/* ── ACTIVITY ITEM ── */
+.activity-item{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
+.activity-item:last-child{border-bottom:none}
+.ai-icon-wrap{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.ai-icon-wrap.running{background:var(--amber-bg);border:1px solid #F0D980}
+.ai-icon-wrap.done{background:var(--green-bg);border:1px solid #A7D7A7}
+.ai-icon-wrap.info{background:var(--blue-xl);border:1px solid var(--blue-l)}
+.ai-icon-wrap.alert{background:var(--red-bg);border:1px solid #F3BCBE}
+.ai-text{flex:1}
+.ai-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.ai-meta{font-size:11px;color:var(--muted)}
+.ai-note{font-size:11px;font-weight:600}
+.ai-note.green{color:var(--green)}.ai-note.amber{color:var(--amber)}.ai-note.red{color:var(--red)}.ai-note.blue{color:var(--blue)}
+
+/* ── BU BREAKDOWN ── */
+.bu-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px}
+.bu-row:last-child{border-bottom:none}
+.bu-name{width:100px;font-weight:600;flex-shrink:0}
+.bu-bar{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.bu-bar-fill{height:100%;border-radius:4px}
+.bu-pct{width:36px;text-align:right;font-weight:700;color:var(--text2);flex-shrink:0}
+.bu-rag{width:16px;flex-shrink:0;text-align:center}
+
+/* ── MINI SPARKLINE ── */
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:32px}
+.spark-bar{width:8px;border-radius:2px 2px 0 0;transition:height .3s;flex-shrink:0}
+
+/* ── CHAT ── */
+.chat-fixed{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--surface);border-top:1px solid var(--border);padding:12px 24px 16px;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.chat-inner{max-width:1092px;margin:0 auto}
+.chat-messages{max-height:200px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.chat-messages:empty{display:none}
+.chat-msg{display:flex;gap:8px;animation:slideIn .2s ease}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-bubble{max-width:72%;padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.55}
+.chat-msg.user .chat-bubble{background:var(--navy);color:white;border-radius:10px 10px 2px 10px}
+.chat-msg.agent .chat-bubble{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px 10px 10px 2px}
+.chat-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+.chat-av.agent{background:linear-gradient(135deg,var(--navy),var(--blue));color:white}
+.chat-av.user{background:#7B4F12;color:white}
+.typing-dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--muted);animation:typeDot 1.2s infinite;margin:0 1px}
+.typing-dots span:nth-child(2){animation-delay:.2s}.typing-dots span:nth-child(3){animation-delay:.4s}
+.chat-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chat-sug{padding:5px 12px;border:1px solid var(--border-d);border-radius:16px;font-size:12px;color:var(--text2);cursor:pointer;background:var(--surface);transition:all .15s;white-space:nowrap;font-family:var(--font)}
+.chat-sug:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-xl)}
+.chat-input-row{display:flex;align-items:center;gap:10px}
+.chat-input-wrap{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border-d);border-radius:24px;padding:8px 14px;transition:border-color .15s,box-shadow .15s}
+.chat-input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,120,212,.1)}
+.chat-plus{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border-d);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;transition:all .15s;color:var(--text2)}
+.chat-plus:hover{background:var(--blue-xl);border-color:var(--blue);color:var(--blue)}
+.chat-input{flex:1;border:none;outline:none;font-family:var(--font);font-size:14px;color:var(--text);background:transparent}
+.chat-input::placeholder{color:var(--muted)}
+.chat-mic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--text2);border:none;background:none;transition:color .15s}
+.chat-mic:hover{color:var(--blue)}
+.chat-send{width:40px;height:40px;border-radius:50%;background:var(--navy);color:white;border:none;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;transition:background .15s,transform .1s}
+.chat-send:hover{background:#002856}
+.chat-send:active{transform:scale(.95)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1000px){
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+  .three-col{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr}
+  .drill-stat-row{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .drill-stat-row.three{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="tb-left">
+    <button class="tb-back" onclick="window.location.href='executive-dashboard.html'">← Portfolio Overview</button>
+    <div class="tb-divider"></div>
+    <div>
+      <div class="tb-title">Portfolio AI Agent</div>
+      <div class="tb-sub">Sarah Johnson · Executive</div>
+    </div>
+  </div>
+  <div class="tb-right">
+    <div class="agent-status"><div class="agent-dot"></div>Agent is running</div>
+    <button class="tb-bti" title="Refresh">↻</button>
+    <button class="tb-bti" title="Export briefing">⬇</button>
+    <button class="tb-bti" title="Settings">⚙</button>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- Agent Header -->
+  <div class="agent-header">
+    <div class="agent-avatar">📊</div>
+    <div style="flex:1">
+      <div class="agent-name">Portfolio Intelligence Agent</div>
+      <div class="agent-context">Monitoring 24 projects · 5 business units · $18.4M portfolio budget · Last analysed 6 minutes ago</div>
+      <div class="agent-summary">
+        Your portfolio has <strong>5 projects at risk and 5 delayed</strong> — concentrated in the Technology and HR business units. The most urgent issue is <strong>HR System Modernisation</strong>, which has passed its April 1st deadline at only 28% completion and has no escalation plan on record. Two critical-priority projects account for 67% of all delayed tasks. On the positive side, <strong>Finance BU is performing best at 82% average completion</strong> and Security Compliance is on track to close this month. The agent has identified <strong>4 decisions that require your attention today</strong> and is actively monitoring 6 automated checks.
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    <div class="kpi blue" onclick="sendMessage('Give me a full portfolio health breakdown')">
+      <div class="kpi-label">Total Projects</div>
+      <div class="kpi-val">24</div>
+      <div class="kpi-trend flat">18 active · 6 on hold</div>
+      <div class="kpi-sub">Across 5 business units</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:75%"></div></div>
+    </div>
+    <div class="kpi ok" onclick="sendMessage('Which projects are on track and why?')">
+      <div class="kpi-label">On Track</div>
+      <div class="kpi-val">14</div>
+      <div class="kpi-trend up">↑ 2 vs last month</div>
+      <div class="kpi-sub">58% of portfolio</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:58%"></div></div>
+    </div>
+    <div class="kpi warn" onclick="sendMessage('Which projects are at risk and what are the key issues?')">
+      <div class="kpi-label">At Risk</div>
+      <div class="kpi-val">5</div>
+      <div class="kpi-trend down">↓ needs attention</div>
+      <div class="kpi-sub">2 critical priority</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:100%"></div></div>
+    </div>
+    <div class="kpi alert" onclick="sendMessage('Show me all delayed projects and their escalation status')">
+      <div class="kpi-label">Delayed</div>
+      <div class="kpi-val">5</div>
+      <div class="kpi-trend down">2 past deadline</div>
+      <div class="kpi-sub">HR + MobiChord critical</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:100%"></div></div>
+    </div>
+    <div class="kpi ai" onclick="sendMessage('What is the overall budget performance across the portfolio?')">
+      <div class="kpi-label">Budget Variance</div>
+      <div class="kpi-val">−4.2%</div>
+      <div class="kpi-trend down">↑ $770K over forecast</div>
+      <div class="kpi-sub">Driven by MobiChord</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:60%;background:linear-gradient(90deg,var(--navy),var(--blue))"></div></div>
+    </div>
+  </div>
+
+  <!-- AI Summary Band -->
+  <div class="ai-band">
+    <div class="ai-band-hdr">
+      <span class="ai-band-icon">◆</span>
+      <span class="ai-band-label">Executive AI Briefing · 6 min ago</span>
+    </div>
+    <div class="ai-band-text">
+      The portfolio's on-track rate has <strong>improved 2 points month-on-month</strong>, but two legacy delayed projects (HR Modernisation and MobiChord) are masking this progress and carrying <strong>increasing reputational and cost risk</strong>. HR Modernisation is the most urgent — it has missed its contractual deadline, has no active recovery plan, and its PM has not updated the project record in 12 days. MobiChord's delay is resource-driven and recoverable with targeted action. The <strong>Finance and Security BUs are ready to close projects this quarter</strong>, which will free up $2.1M in budget for reallocation. Recommend a portfolio steering review focusing on HR and MobiChord this week.
+    </div>
+  </div>
+
+  <!-- Three-col: Input Needed, Automated Activity, BU Health -->
+  <div class="three-col">
+
+    <!-- INPUT NEEDED -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-icon">⚠️</span>
+        <span class="panel-title">Input Needed</span>
+        <span class="panel-count red">4</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Item 1 -->
+        <div class="insight-item" onclick="toggleDrill('d1',this)">
+          <div class="ii-top">
+            <div class="ii-dot red"></div>
+            <div class="ii-content">
+              <div class="ii-title">HR Modernisation has missed its April 1st deadline with no recovery plan.</div>
+              <div class="ii-meta">PRJ0010891 · HR BU · 28% complete · PM: P. Lee</div>
+              <div class="ii-tags"><span class="tag urgent">Past Deadline</span><span class="tag warn">Escalation Required</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d1">›</span>
+          </div>
+          <div class="drill-panel" id="d1">
+            <div class="drill-section">
+              <div class="drill-section-title">Project Status</div>
+              <div class="drill-stat-row three">
+                <div class="drill-stat"><div class="drill-stat-label">Completion</div><div class="drill-stat-val red">28%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Days Past Deadline</div><div class="drill-stat-val red">24</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Last PM Update</div><div class="drill-stat-val amber">12 days ago</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>Immediate escalation required.</strong> Schedule a steering committee review with P. Lee this week. The agent has detected no recovery plan, no milestone updates, and no stakeholder communications in the past 12 days. This project needs a formal go/no-go decision — continue with revised scope, pause, or close.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('Draft an escalation briefing for HR Modernisation for the steering committee')">Draft escalation briefing</button>
+                <button class="drill-btn ghost" onclick="sendMessage('What are the options for HR Modernisation — continue, pause, or close?')">Explore options</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 2 -->
+        <div class="insight-item" onclick="toggleDrill('d2',this)">
+          <div class="ii-top">
+            <div class="ii-dot amber"></div>
+            <div class="ii-content">
+              <div class="ii-title">MobiChord forecast shows 6–8 week overrun without executive intervention.</div>
+              <div class="ii-meta">PRJ0010677 · Technology BU · 45% complete · PM: A. Kumar</div>
+              <div class="ii-tags"><span class="tag urgent">At Risk</span><span class="tag info">Resource Decision</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d2">›</span>
+          </div>
+          <div class="drill-panel" id="d2">
+            <div class="drill-section">
+              <div class="drill-section-title">Root Cause</div>
+              <div class="drill-stat-row three">
+                <div class="drill-stat"><div class="drill-stat-label">Current</div><div class="drill-stat-val amber">45%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Forecast at Deadline</div><div class="drill-stat-val red">68%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Budget Overrun</div><div class="drill-stat-val red">+$67K</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>The fix is a resource rebalancing decision</strong> — Lena Park (Tech Lead) is at 120% allocation across MobiChord and Data Warehouse. A temporary shift of 20% allocation from Data Warehouse to MobiChord recovers the schedule at no additional cost. This requires your approval as it affects two project budgets.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn blue" onclick="sendMessage('Model the impact of rebalancing Lena Park from Data Warehouse to MobiChord')">Model rebalancing</button>
+                <button class="drill-btn ghost" onclick="sendMessage('What is the budget impact of the MobiChord overrun?')">Budget impact</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 3 -->
+        <div class="insight-item" onclick="toggleDrill('d3',this)">
+          <div class="ii-top">
+            <div class="ii-dot blue"></div>
+            <div class="ii-content">
+              <div class="ii-title">Security Compliance closing this month — $340K budget to reallocate.</div>
+              <div class="ii-meta">PRJ0010992 · Security BU · 85% complete · Due Apr 15</div>
+              <div class="ii-tags"><span class="tag ok">Closing Soon</span><span class="tag navy">Budget Decision</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d3">›</span>
+          </div>
+          <div class="drill-panel" id="d3">
+            <div class="drill-section">
+              <div class="drill-section-title">Closing Project Details</div>
+              <div class="drill-stat-row three">
+                <div class="drill-stat"><div class="drill-stat-label">Completion</div><div class="drill-stat-val green">85%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Remaining Budget</div><div class="drill-stat-val blue">$340K</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Est. Close Date</div><div class="drill-stat-val green">Apr 15</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>Prepare budget reallocation now</strong> to avoid Q2 underspend. The agent recommends redirecting $200K toward MobiChord (to fund additional contractor support) and $140K to the Data Warehouse project which is tracking slightly under resource capacity.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('Draft a budget reallocation proposal for the Security Compliance remaining budget')">Draft reallocation proposal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 4 -->
+        <div class="insight-item" onclick="toggleDrill('d4',this)">
+          <div class="ii-top">
+            <div class="ii-dot amber"></div>
+            <div class="ii-content">
+              <div class="ii-title">3 projects have Q2 milestones with no documented contingency.</div>
+              <div class="ii-meta">ERP Migration · Cloud Migration · Data Warehouse · Due Apr–May</div>
+              <div class="ii-tags"><span class="tag warn">No Contingency</span><span class="tag info">Q2 Risk</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d4">›</span>
+          </div>
+          <div class="drill-panel" id="d4">
+            <div class="drill-section">
+              <div class="drill-section-title">Milestone Risk Summary</div>
+              <table class="proj-table">
+                <thead><tr><th>Project</th><th>Milestone</th><th>Due</th><th>Float</th></tr></thead>
+                <tbody>
+                  <tr><td style="font-weight:600">ERP Migration</td><td>Phase 2 Go-Live</td><td style="color:var(--amber)">Apr 30</td><td style="color:var(--red);font-weight:700">0 days</td></tr>
+                  <tr><td style="font-weight:600">Cloud Migration</td><td>Phase 2 Kick-off</td><td>Apr 2</td><td style="color:var(--amber);font-weight:700">3 days</td></tr>
+                  <tr><td style="font-weight:600">Data Warehouse</td><td>Schema Finalisation</td><td>Apr 2</td><td style="color:var(--amber);font-weight:700">0 days</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>Request contingency plans from PMs</strong> for ERP Migration and Data Warehouse — both have zero float, meaning any single-day slip cascades. The agent can auto-generate a contingency plan template for each PM pre-filled with project data.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('Generate contingency plan requests for ERP Migration and Data Warehouse PMs')">Request contingency plans</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="show-more" onclick="sendMessage('Show me all open decisions and escalations across the portfolio')">Show all decisions →</button>
+      </div>
+    </div>
+
+    <!-- AUTOMATED ACTIVITY -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-icon">⚡</span>
+        <span class="panel-title">Automated Activity</span>
+        <span class="panel-count blue">6</span>
+      </div>
+      <div class="panel-body">
+        <div class="activity-item">
+          <div class="ai-icon-wrap running">⏳</div>
+          <div class="ai-text">
+            <div class="ai-title">Tracking HR Modernisation — no PM activity detected for 12 days.</div>
+            <div class="ai-meta">PRJ0010891 · Escalation flag raised · 6 min ago</div>
+            <div class="ai-note red">Escalation threshold exceeded</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="ai-icon-wrap running">⏳</div>
+          <div class="ai-text">
+            <div class="ai-title">Monitoring MobiChord deadline forecast — updated daily.</div>
+            <div class="ai-meta">PRJ0010677 · Pace analysis running · 6 min ago</div>
+            <div class="ai-note amber">Projected overrun: 6–8 weeks</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="ai-icon-wrap done">✅</div>
+          <div class="ai-text">
+            <div class="ai-title">Weekly portfolio executive summary generated and distributed.</div>
+            <div class="ai-meta">All 24 projects · Yesterday 8:00 AM</div>
+            <div class="ai-note green">Delivered to 6 stakeholders</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="ai-icon-wrap done">✅</div>
+          <div class="ai-text">
+            <div class="ai-title">RAG status recalculated across portfolio — 2 projects moved to At Risk.</div>
+            <div class="ai-meta">Portfolio-wide · 2h ago</div>
+            <div class="ai-note amber">ERP Migration + Data Warehouse upgraded to Watch</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="ai-icon-wrap info">📋</div>
+          <div class="ai-text">
+            <div class="ai-title">Q1 portfolio performance report compiled — ready for your review.</div>
+            <div class="ai-meta">Q1 2025 · All business units · 1h ago</div>
+            <div class="ai-note blue">Finance BU top performer · HR BU needs review</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="ai-icon-wrap alert">🔔</div>
+          <div class="ai-text">
+            <div class="ai-title">Budget variance alert triggered — MobiChord exceeded 5% threshold.</div>
+            <div class="ai-meta">PRJ0010677 · Finance notification sent · 3h ago</div>
+            <div class="ai-note red">+$67K over forecast</div>
+          </div>
+        </div>
+        <button class="show-more" onclick="sendMessage('Show me the full automated activity log for this week')">Show full activity log →</button>
+      </div>
+    </div>
+
+    <!-- BU HEALTH -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-icon">🏢</span>
+        <span class="panel-title">Business Unit Health</span>
+        <span class="panel-count navy">5</span>
+      </div>
+      <div class="panel-body" style="padding:14px 18px">
+        <div class="drill-section-title" style="margin-bottom:12px">Avg Completion by BU</div>
+
+        <div class="bu-row" style="cursor:pointer" onclick="sendMessage('Tell me more about the Finance BU portfolio performance')">
+          <div class="bu-name">Finance</div>
+          <div class="bu-bar"><div class="bu-bar-fill" style="width:82%;background:var(--green)"></div></div>
+          <div class="bu-pct" style="color:var(--green)">82%</div>
+          <div class="bu-rag"><span class="rag-dot rag-g"></span></div>
+        </div>
+        <div class="bu-row" style="cursor:pointer" onclick="sendMessage('What is the status of the Security BU projects?')">
+          <div class="bu-name">Security</div>
+          <div class="bu-bar"><div class="bu-bar-fill" style="width:75%;background:var(--green)"></div></div>
+          <div class="bu-pct" style="color:var(--green)">75%</div>
+          <div class="bu-rag"><span class="rag-dot rag-g"></span></div>
+        </div>
+        <div class="bu-row" style="cursor:pointer" onclick="sendMessage('What projects are in the Technology BU and what are the risks?')">
+          <div class="bu-name">Technology</div>
+          <div class="bu-bar"><div class="bu-bar-fill" style="width:68%;background:var(--amber)"></div></div>
+          <div class="bu-pct" style="color:var(--amber)">68%</div>
+          <div class="bu-rag"><span class="rag-dot rag-a"></span></div>
+        </div>
+        <div class="bu-row" style="cursor:pointer" onclick="sendMessage('What is happening in the Operations BU?')">
+          <div class="bu-name">Operations</div>
+          <div class="bu-bar"><div class="bu-bar-fill" style="width:54%;background:var(--amber)"></div></div>
+          <div class="bu-pct" style="color:var(--amber)">54%</div>
+          <div class="bu-rag"><span class="rag-dot rag-a"></span></div>
+        </div>
+        <div class="bu-row" style="cursor:pointer" onclick="sendMessage('What is driving the HR BU underperformance?')">
+          <div class="bu-name">HR</div>
+          <div class="bu-bar"><div class="bu-bar-fill" style="width:41%;background:var(--red)"></div></div>
+          <div class="bu-pct" style="color:var(--red)">41%</div>
+          <div class="bu-rag"><span class="rag-dot rag-r"></span></div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          <div class="drill-section-title" style="margin-bottom:10px">Portfolio Completion Trend</div>
+          <div style="display:flex;align-items:flex-end;gap:3px;height:40px;padding:0 2px">
+            <div style="flex:1;background:#C7E0F4;border-radius:2px 2px 0 0;height:52%"></div>
+            <div style="flex:1;background:#C7E0F4;border-radius:2px 2px 0 0;height:55%"></div>
+            <div style="flex:1;background:#C7E0F4;border-radius:2px 2px 0 0;height:58%"></div>
+            <div style="flex:1;background:#C7E0F4;border-radius:2px 2px 0 0;height:54%"></div>
+            <div style="flex:1;background:#C7E0F4;border-radius:2px 2px 0 0;height:56%"></div>
+            <div style="flex:1;background:#C7E0F4;border-radius:2px 2px 0 0;height:60%"></div>
+            <div style="flex:1;background:#0078D4;border-radius:2px 2px 0 0;height:64%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px">
+            <span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">Portfolio avg completion trending <strong style="color:var(--green)">↑ upward</strong> · 52% → 64% over 6 months</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Deep Insights (full width) -->
+  <div class="one-col">
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-icon">◆</span>
+        <span class="panel-title">AI Portfolio Insights</span>
+        <span class="panel-count navy">6</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="insight-item" onclick="toggleDrill('d5',this)">
+          <div class="ii-top">
+            <div class="ii-dot ai"></div>
+            <div class="ii-content">
+              <div class="ii-title">67% of all delayed tasks are concentrated in 2 of 24 projects — a structural risk, not a broad performance issue.</div>
+              <div class="ii-meta">Portfolio risk analysis · Based on task-level data across all active projects</div>
+              <div class="ii-tags"><span class="tag ai">Structural Insight</span><span class="tag info">Action: Targeted Intervention</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d5">›</span>
+          </div>
+          <div class="drill-panel" id="d5">
+            <div class="drill-section">
+              <div class="drill-section-title">Delay Concentration</div>
+              <div class="drill-stat-row">
+                <div class="drill-stat"><div class="drill-stat-label">Total Delayed Tasks</div><div class="drill-stat-val navy">34</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">In HR Modernisation</div><div class="drill-stat-val red">14</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">In MobiChord</div><div class="drill-stat-val red">9</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Across other 22</div><div class="drill-stat-val green">11</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>This is a targeted problem, not a portfolio-wide issue.</strong> Resolving HR Modernisation and MobiChord would bring the portfolio's delayed task count down by 67%, improving the overall RAG status significantly. The remaining 22 projects are performing within acceptable tolerances.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('What would the portfolio health look like if HR Modernisation and MobiChord were back on track?')">Model portfolio recovery</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-item" onclick="toggleDrill('d6',this)">
+          <div class="ii-top">
+            <div class="ii-dot ai"></div>
+            <div class="ii-content">
+              <div class="ii-title">Finance BU is outperforming all others at 82% — their project delivery model is replicable.</div>
+              <div class="ii-meta">Finance BU · 4 projects · Avg 82% completion · 0 delayed</div>
+              <div class="ii-tags"><span class="tag ok">Best Practice</span><span class="tag ai">Replication Opportunity</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d6">›</span>
+          </div>
+          <div class="drill-panel" id="d6">
+            <div class="drill-section">
+              <div class="drill-section-title">Finance BU Success Factors</div>
+              <div class="drill-stat-row three">
+                <div class="drill-stat"><div class="drill-stat-label">Avg Completion</div><div class="drill-stat-val green">82%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Delayed Projects</div><div class="drill-stat-val green">0</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">PM Update Frequency</div><div class="drill-stat-val green">Daily</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>Finance BU PMs update project records daily</strong> (vs 4.2 days average for other BUs) and consistently use milestone buffering. Consider sharing their project cadence framework with HR and Technology BU PMs — the agent can produce a comparison report.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('Generate a best practice report based on Finance BU project delivery patterns')">Generate best practice report</button>
+                <button class="drill-btn ghost" onclick="sendMessage('What specific practices make Finance BU most effective?')">Explore practices</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-item" onclick="toggleDrill('d7',this)">
+          <div class="ii-top">
+            <div class="ii-dot blue"></div>
+            <div class="ii-content">
+              <div class="ii-title">3 projects are projected to close in Q2 — freeing $2.1M in budget and 8 FTE for reallocation.</div>
+              <div class="ii-meta">Security Compliance · CPQ Tool · Cloud Migration Phase 1 · Closing Apr–Jun</div>
+              <div class="ii-tags"><span class="tag ok">Closing Q2</span><span class="tag navy">Budget Planning</span><span class="tag ai">Resource Opportunity</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d7">›</span>
+          </div>
+          <div class="drill-panel" id="d7">
+            <div class="drill-section">
+              <div class="drill-section-title">Closing Projects</div>
+              <table class="proj-table">
+                <thead><tr><th>Project</th><th>Est. Close</th><th>Budget Freed</th><th>FTE Freed</th></tr></thead>
+                <tbody>
+                  <tr><td style="font-weight:600">Security Compliance</td><td>Apr 15</td><td style="color:var(--green);font-weight:600">$340K</td><td style="font-weight:600">2</td></tr>
+                  <tr><td style="font-weight:600">CPQ Tool</td><td>May 30</td><td style="color:var(--green);font-weight:600">$890K</td><td style="font-weight:600">4</td></tr>
+                  <tr><td style="font-weight:600">Cloud Migration Ph.1</td><td>Jun 15</td><td style="color:var(--green);font-weight:600">$870K</td><td style="font-weight:600">2</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>Begin Q3 pipeline planning now</strong> to absorb the freed capacity. The 8 FTEs have skills in architecture, QA, and development — high demand areas. The agent recommends pre-approving 2–3 Q3 projects to avoid a capacity gap in July.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('What Q3 projects should we prioritise based on the freed budget and FTE capacity?')">Plan Q3 pipeline</button>
+                <button class="drill-btn ghost" onclick="sendMessage('Draft a budget reallocation summary for Q2 project closures')">Draft budget summary</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-item" onclick="toggleDrill('d8',this)">
+          <div class="ii-top">
+            <div class="ii-dot amber"></div>
+            <div class="ii-content">
+              <div class="ii-title">Portfolio resource utilisation is uneven — 3 senior engineers are over-allocated while 4 others are below 50%.</div>
+              <div class="ii-meta">Resource health · Cross-project analysis · March 2025</div>
+              <div class="ii-tags"><span class="tag warn">Over-allocation</span><span class="tag ai">Rebalancing Available</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d8">›</span>
+          </div>
+          <div class="drill-panel" id="d8">
+            <div class="drill-section">
+              <div class="drill-section-title">Resource Health Summary</div>
+              <div class="drill-stat-row">
+                <div class="drill-stat"><div class="drill-stat-label">Over-allocated (&gt;100%)</div><div class="drill-stat-val red">3</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Optimal (50–90%)</div><div class="drill-stat-val green">14</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Under-utilised (&lt;50%)</div><div class="drill-stat-val amber">4</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Team Avg</div><div class="drill-stat-val blue">74%</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>Rebalancing is available without adding headcount.</strong> The 4 under-utilised resources have skills matching the over-allocated roles. The agent has identified 3 specific task reassignments that would bring all resources within the 70–90% optimal range.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('Show me the 3 specific resource rebalancing recommendations for the portfolio')">Show rebalancing plan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-item" onclick="toggleDrill('d9',this)">
+          <div class="ii-top">
+            <div class="ii-dot ai"></div>
+            <div class="ii-content">
+              <div class="ii-title">If current trends hold, the portfolio will end Q2 at 71% overall completion — 4 points below the 75% target.</div>
+              <div class="ii-meta">Q2 forecast · Based on pace analysis across all 18 active projects</div>
+              <div class="ii-tags"><span class="tag ai">Predictive</span><span class="tag warn">Below Q2 Target</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d9">›</span>
+          </div>
+          <div class="drill-panel" id="d9">
+            <div class="drill-section">
+              <div class="drill-section-title">Q2 Forecast</div>
+              <div class="drill-stat-row three">
+                <div class="drill-stat"><div class="drill-stat-label">Current Avg</div><div class="drill-stat-val blue">64%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Q2 Target</div><div class="drill-stat-val navy">75%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Forecast</div><div class="drill-stat-val amber">71%</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>The 4-point gap is closable</strong> if HR Modernisation is formally re-scoped or paused (removing its drag on portfolio average) and MobiChord's recovery plan is actioned. Both together would add approximately 3.8 points to portfolio average by end of Q2.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('What is the Q2 forecast if we pause HR Modernisation and action the MobiChord recovery plan?')">Run Q2 scenario</button>
+                <button class="drill-btn ghost" onclick="sendMessage('What would hitting the 75% Q2 target require?')">What would it take?</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-item" onclick="toggleDrill('d10',this)">
+          <div class="ii-top">
+            <div class="ii-dot blue"></div>
+            <div class="ii-content">
+              <div class="ii-title">Cloud Migration Phase 2 kick-off is on April 2 — dependencies from Phase 1 need sign-off before then.</div>
+              <div class="ii-meta">PRJ0011102 · Technology BU · Phase 1 handover outstanding</div>
+              <div class="ii-tags"><span class="tag info">Imminent Dependency</span><span class="tag warn">Sign-off Pending</span></div>
+            </div>
+            <span class="ii-chevron" id="chev-d10">›</span>
+          </div>
+          <div class="drill-panel" id="d10">
+            <div class="drill-section">
+              <div class="drill-section-title">Dependency Detail</div>
+              <div class="drill-stat-row three">
+                <div class="drill-stat"><div class="drill-stat-label">Phase 2 Kick-off</div><div class="drill-stat-val blue">Apr 2</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Days Until Kick-off</div><div class="drill-stat-val amber">7</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Outstanding Sign-offs</div><div class="drill-stat-val red">2</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="rec-box"><strong>Two Phase 1 sign-offs are outstanding</strong> — architecture handover and security clearance. Both require your approval or delegation before April 2. If delayed, Phase 2 kick-off slips and the November 2025 go-live date is at risk.</div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('What are the two outstanding Cloud Migration Phase 1 sign-offs I need to action?')">View sign-offs needed</button>
+                <button class="drill-btn ghost" onclick="sendMessage('Draft a sign-off request for Cloud Migration Phase 1 handover')">Draft sign-off request</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- All Projects Health (full width) -->
+  <div class="one-col" style="animation:fadeUp .4s .3s ease both">
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-icon">📋</span>
+        <span class="panel-title">Portfolio Snapshot — All Projects</span>
+      </div>
+      <div class="panel-body">
+        <table class="proj-table">
+          <thead>
+            <tr><th>Project</th><th>BU</th><th>PM</th><th>Status</th><th>Priority</th><th>Progress</th><th>End Date</th><th>AI Flag</th></tr>
+          </thead>
+          <tbody>
+            <tr onclick="sendMessage('Tell me more about MobiChord Mobility status and risks')" style="cursor:pointer">
+              <td style="font-weight:600">MobiChord Mobility</td><td>Technology</td><td>A. Kumar</td>
+              <td><span class="rag-dot rag-a"></span>At Risk</td>
+              <td style="color:var(--red);font-weight:600">Critical</td>
+              <td><span class="pb-sm"><span class="pb-sm-fill a" style="width:45%"></span></span> 45%</td>
+              <td style="color:var(--red);font-weight:600">03 Jul 2025</td>
+              <td><span class="tag warn">6–8wk overrun</span></td>
+            </tr>
+            <tr onclick="sendMessage('What is happening with HR System Modernisation?')" style="cursor:pointer">
+              <td style="font-weight:600">HR Modernisation</td><td>HR</td><td>P. Lee</td>
+              <td><span class="rag-dot rag-r"></span>Delayed</td>
+              <td style="color:var(--red);font-weight:600">Critical</td>
+              <td><span class="pb-sm"><span class="pb-sm-fill r" style="width:28%"></span></span> 28%</td>
+              <td style="color:var(--red);font-weight:600">01 Apr 2025 ⚠</td>
+              <td><span class="tag urgent">Missed deadline</span></td>
+            </tr>
+            <tr onclick="sendMessage('Tell me about the CPQ Tool Implementation progress')" style="cursor:pointer">
+              <td style="font-weight:600">CPQ Tool</td><td>Technology</td><td>S. Mills</td>
+              <td><span class="rag-dot rag-g"></span>On Track</td>
+              <td style="color:var(--amber);font-weight:600">High</td>
+              <td><span class="pb-sm"><span class="pb-sm-fill g" style="width:72%"></span></span> 72%</td>
+              <td>15 Sep 2025</td>
+              <td><span class="tag ok">Closing Q3</span></td>
+            </tr>
+            <tr onclick="sendMessage('What is the status of Cloud Migration Phase 2?')" style="cursor:pointer">
+              <td style="font-weight:600">Cloud Migration Ph.2</td><td>Technology</td><td>R. Tran</td>
+              <td><span class="rag-dot rag-g"></span>On Track</td>
+              <td>Medium</td>
+              <td><span class="pb-sm"><span class="pb-sm-fill g" style="width:60%"></span></span> 60%</td>
+              <td>30 Nov 2025</td>
+              <td><span class="tag warn">Sign-off pending</span></td>
+            </tr>
+            <tr onclick="sendMessage('What is the risk level of Data Warehouse Rebuild?')" style="cursor:pointer">
+              <td style="font-weight:600">Data Warehouse</td><td>Operations</td><td>J. Brown</td>
+              <td><span class="rag-dot rag-a"></span>At Risk</td>
+              <td style="color:var(--amber);font-weight:600">High</td>
+              <td><span class="pb-sm"><span class="pb-sm-fill a" style="width:38%"></span></span> 38%</td>
+              <td style="color:var(--amber);font-weight:600">20 Jun 2025</td>
+              <td><span class="tag warn">0-day float</span></td>
+            </tr>
+            <tr onclick="sendMessage('Tell me about Security Compliance closing status')" style="cursor:pointer">
+              <td style="font-weight:600">Security Compliance</td><td>Security</td><td>M. Khan</td>
+              <td><span class="rag-dot rag-g"></span>On Track</td>
+              <td>Medium</td>
+              <td><span class="pb-sm"><span class="pb-sm-fill g" style="width:85%"></span></span> 85%</td>
+              <td>15 Apr 2025</td>
+              <td><span class="tag ok">Closing Apr</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="show-more" onclick="sendMessage('Show me the full portfolio list with AI risk flags for all 24 projects')">Show all 24 projects →</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── CHAT BAR ── -->
+<div class="chat-fixed">
+  <div class="chat-inner">
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-suggestions" id="chat-suggestions">
+      <button class="chat-sug" onclick="sendMessage('What are the top 3 things I need to action today?')">Top 3 actions for today</button>
+      <button class="chat-sug" onclick="sendMessage('Give me an executive summary of the portfolio for a board meeting')">Board meeting summary</button>
+      <button class="chat-sug" onclick="sendMessage('Which projects should I be most concerned about?')">Which projects concern me most?</button>
+      <button class="chat-sug" onclick="sendMessage('What is the Q2 portfolio forecast?')">Q2 forecast</button>
+      <button class="chat-sug" onclick="sendMessage('Where is budget being wasted?')">Where is budget at risk?</button>
+    </div>
+    <div class="chat-input-row">
+      <button class="chat-plus" title="Attach">+</button>
+      <div class="chat-input-wrap">
+        <input class="chat-input" id="chat-input" type="text" placeholder="Ask Portfolio Agent anything about your portfolio…" onkeydown="if(event.key==='Enter')sendFromInput()"/>
+        <button class="chat-mic" title="Voice input">🎤</button>
+      </div>
+      <button class="chat-send" id="chat-send" onclick="sendFromInput()">↑</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DRILL DOWN ──
+function toggleDrill(id, row) {
+  const panel = document.getElementById(id);
+  const chev  = document.getElementById('chev-' + id);
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.drill-panel.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.ii-chevron.open').forEach(c => c.classList.remove('open'));
+  document.querySelectorAll('.insight-item.expanded').forEach(r => r.classList.remove('expanded'));
+  if (!isOpen) {
+    panel.classList.add('open');
+    if (chev) chev.classList.add('open');
+    row.classList.add('expanded');
+  }
+}
+
+// ── CHAT RESPONSES ──
+const R = {
+  actions: `**Your top 3 actions today:**\n\n**1. Escalate HR Modernisation** — Past deadline, no recovery plan, PM silent for 12 days. Schedule a steering committee review. The agent has a pre-drafted escalation briefing ready.\n\n**2. Approve MobiChord resource rebalancing** — Shifting Lena Park's allocation 20% from Data Warehouse to MobiChord recovers the timeline at zero additional cost. Needs your sign-off.\n\n**3. Action Cloud Migration Phase 1 sign-offs** — 2 sign-offs outstanding before the April 2 Phase 2 kick-off. 7 days remaining.`,
+  board: `**Executive Portfolio Summary — Q1 2025 / Board Ready:**\n\n**Portfolio Health:** 14/24 projects on track (58%). Improving — up 2 points month-on-month.\n\n**Critical Issues:** HR Modernisation (missed Apr 1 deadline, 28% complete) and MobiChord (at risk, 6–8 week overrun forecast). Both require steering committee review.\n\n**Highlights:** Finance BU leading at 82% avg completion. Security Compliance closing April 15, freeing $340K. Network Infrastructure 2 weeks ahead of schedule.\n\n**Budget:** Portfolio tracking −4.2% variance ($770K over forecast), driven by MobiChord. Recoverable if resource rebalancing approved.\n\n**Q2 Outlook:** Forecast 71% completion vs 75% target. Gap closable if HR Modernisation is re-scoped and MobiChord recovery plan actioned.`,
+  concerned: `**Projects requiring your attention, ranked by risk:**\n\n🔴 **HR Modernisation (PRJ0010891)** — Missed deadline, no recovery plan, PM inactive. Highest risk.\n\n🔴 **MobiChord (PRJ0010677)** — 6–8 week overrun forecast. Resource-driven and recoverable with your sign-off.\n\n🟡 **Data Warehouse (PRJ0010445)** — At risk, 0-day float on Apr 2 milestone. Monitor daily.\n\n🟡 **ERP Migration** — 0-day float on Apr 30 milestone. No contingency documented.\n\n🔵 **Cloud Migration Ph.2** — Phase 1 sign-offs outstanding before Apr 2 kick-off.`,
+  q2: `**Q2 Portfolio Forecast:**\n\nCurrent avg completion: 64%\nQ2 target: 75%\nCurrent forecast: 71% (4-point gap)\n\n**What changes the forecast:**\n- If HR Modernisation is paused/re-scoped: +2.1 points\n- If MobiChord recovery plan actioned: +1.7 points\n- Combined: Forecast reaches 74.8% — nearly on target\n\n**Projects closing in Q2** (Security, CPQ, Cloud Ph.1) will remove their drag on average, adding approximately 1.5 points to portfolio average by June.`,
+  budget: `**Portfolio Budget Risk Analysis:**\n\n🔴 **MobiChord** — +$67K over forecast (+5.3%). Primary driver.\n🟡 **HR Modernisation** — On track in spend but 0 progress — inefficient spend.\n🟡 **Data Warehouse** — Under-spending slightly (team under-utilised).\n\n**Opportunity:** 3 projects closing in Q2 will free $2.1M. Recommend pre-approving Q3 pipeline to deploy this efficiently rather than returning it as underspend.\n\n**Net portfolio position:** −4.2% variance. Manageable if MobiChord overrun is contained.`,
+  hr: `**HR Modernisation — Full Situation:**\n\nPRJ0010891 | HR Business Unit | PM: P. Lee\n\nCurrent: 28% complete | Deadline: April 1, 2025 (MISSED 24 days ago)\nLast PM update: 12 days ago | Recovery plan: None on record\n\n**Options available:**\n1. **Continue with revised scope** — descope to core functionality, target July 2025\n2. **Pause** — freeze spend, conduct a 2-week review, restart with new plan\n3. **Close** — accept the loss, evaluate whether the business need is still valid\n\nThe agent recommends requesting a formal PM status by end of today with a recovery proposal by Friday.`,
+  mobichord: `**MobiChord Mobility — Full Risk Detail:**\n\nPRJ0010677 | Technology BU | PM: Arjun Kumar\n\nCurrent: 45% | Forecast at deadline: 68% | Overrun: 6–8 weeks\nBudget: +$67K over forecast\n\n**Root cause:** Lena Park (Tech Lead) at 120% allocation — her MobiChord tasks are being deprioritised. 4 tasks overdue, blocking vendor sign-off milestone.\n\n**Fix:** Approve temporary rebalancing of Lena Park from Data Warehouse (50%→30%) to MobiChord (70%→90%). Data Warehouse can absorb this without missing its June deadline.\n\n**Cost:** Zero additional budget required.`,
+  rebalance: `**Resource Rebalancing Model — Lena Park:**\n\nCurrent: MobiChord 70% + Data Warehouse 50% = 120% (over-allocated)\nProposed: MobiChord 90% + Data Warehouse 30% = 120% → 90% (optimal)\n\n**Impact on MobiChord:**\n- Vendor sign-off unblocked within 1 week\n- Forecast improves from 68% → ~94% completion by July deadline\n- 6-week overrun reduced to ~1 week buffer\n\n**Impact on Data Warehouse:**\n- Data Warehouse currently 62% on track — can absorb 20% reduction\n- June 2025 deadline remains achievable at reduced allocation\n- No milestone dates at risk\n\n**Recommendation:** Approve. Zero cost, significant schedule recovery.`,
+  practice: `**Finance BU Best Practice Report:**\n\n**What they do differently:**\n1. Daily project updates in ServiceNow (vs 4.2 days average in other BUs)\n2. Milestone buffering — they add 10% float to all critical path tasks\n3. Weekly risk reviews — every Friday, PM logs risks with mitigations\n4. Early escalation culture — 3 issues escalated proactively this quarter vs 0 in HR BU\n\n**Outcomes:**\n- 0 delayed projects in Q1\n- 82% avg completion vs 64% portfolio average\n- 0 budget escalations\n\n**Recommendation:** Run a 2-hour PM practice workshop with HR and Technology BU PMs using Finance BU as the case study.`,
+  default: `I've reviewed the portfolio data on that. Based on the current state across all 24 projects, the most material risks are concentrated in HR Modernisation and MobiChord — resolving those two projects would meaningfully improve the overall portfolio health. Would you like me to run a specific scenario, draft a communication, or produce an analysis on any aspect of the portfolio?`
+};
+
+function getResponse(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('action') || m.includes('priorit') || m.includes('today') || m.includes('first')) return R.actions;
+  if (m.includes('board') || m.includes('summary') || m.includes('executive summary')) return R.board;
+  if (m.includes('concern') || m.includes('worried') || m.includes('risk') && m.includes('project')) return R.concerned;
+  if (m.includes('q2') || m.includes('forecast') || m.includes('target')) return R.q2;
+  if (m.includes('budget') || m.includes('cost') || m.includes('wast') || m.includes('spend')) return R.budget;
+  if (m.includes('hr') || m.includes('modernisation') || m.includes('p. lee')) return R.hr;
+  if (m.includes('mobichord') || m.includes('mobicho')) return R.mobichord;
+  if (m.includes('rebalanc') || m.includes('lena') || m.includes('alloc')) return R.rebalance;
+  if (m.includes('finance') || m.includes('best practice') || m.includes('perform')) return R.practice;
+  if (m.includes('security') || m.includes('complian')) return `**Security Compliance (PRJ0010992):**\n\nCurrently at 85% completion — on track to close April 15. The final audit milestone is confirmed. This frees $340K and 2 FTE in mid-April.\n\n**AI recommendation:** Prepare reallocation of the $340K now — $200K toward MobiChord contractor support, $140K toward Data Warehouse.`;
+  if (m.includes('cloud') || m.includes('migration')) return `**Cloud Migration Phase 2 (PRJ0011102):**\n\nPhase 2 kick-off: April 2 (7 days away)\nOutstanding: 2 Phase 1 sign-offs (architecture handover + security clearance)\nRisk: If sign-offs not completed, Phase 2 delays and November go-live is at risk.\n\nThe agent has prepared both sign-off documents — they require your review and approval. Estimated 20 minutes to review.`;
+  if (m.includes('q3') || m.includes('pipeline') || m.includes('plan')) return `**Q3 Pipeline Planning:**\n\n$2.1M and 8 FTE become available in Q2 as 3 projects close.\n\n**Recommended Q3 candidates** based on strategic priority and resource fit:\n1. **Digital Customer Portal** — High strategic value, needs 3 developers (available from CPQ close)\n2. **MDM Phase 2** — Already in backlog, requires architect (James Daly available)\n3. **BI Modernisation** — Finance BU request, aligns with strong BU delivery capability\n\nPre-approval now avoids a July capacity gap.`;
+  if (m.includes('data warehouse')) return `**Data Warehouse Rebuild (PRJ0010445):**\n\nCurrently 62% complete — on track overall but the Schema Finalisation milestone (Apr 2) has zero float. Any 1-day slip cascades.\n\n**Agent monitoring:** Daily check on this milestone is active.\n\n**Resource note:** With Lena Park's proposed rebalancing to 30%, Data Warehouse pace reduces slightly but the June 2025 deadline remains achievable.`;
+  if (m.includes('contingency') || m.includes('erp')) return `**Contingency Plan Requests:**\n\nERP Migration and Data Warehouse both have zero-float milestones in April. The agent has pre-filled contingency plan templates with current project data for each PM.\n\n**Template covers:**\n- Primary risk scenario\n- Fallback milestone dates\n- Resource requirements\n- Escalation triggers\n\nShall I send these to the respective PMs now?`;
+  if (m.includes('health') || m.includes('portfolio')) return R.concerned;
+  return R.default;
+}
+
+function addMessage(text, role) {
+  const msgs = document.getElementById('chat-messages');
+  const av   = role === 'user' ? 'SJ' : '◆';
+  const div  = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+  div.innerHTML = `<div class="chat-av ${role}">${av}</div><div class="chat-bubble">${formatted}</div>`;
+  msgs.appendChild(div);
+  msgs.style.display = 'flex';
+  msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('chat-suggestions').style.display = 'none';
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const div  = document.createElement('div');
+  div.className = 'chat-msg agent';
+  div.id = 'typing-indicator';
+  div.innerHTML = `<div class="chat-av agent">◆</div><div class="chat-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function sendMessage(text) {
+  addMessage(text, 'user');
+  const input = document.getElementById('chat-input');
+  if (input) input.value = '';
+  addTyping();
+  setTimeout(() => {
+    removeTyping();
+    addMessage(getResponse(text), 'agent');
+  }, 800 + Math.random() * 700);
+}
+
+function sendFromInput() {
+  const input = document.getElementById('chat-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  sendMessage(text);
+}
+</script>
+</body>
+</html>
