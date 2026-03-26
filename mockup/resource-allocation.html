@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Resource Allocation — PM Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&family=Cascadia+Code:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ms-blue:        #0078D4;
+  --ms-blue-dark:   #005A9E;
+  --ms-blue-light:  #C7E0F4;
+  --ms-blue-xlight: #EFF6FC;
+  --ms-teal:        #008575;
+  --ms-navy:        #003B73;
+  --bg:             #F3F2F1;
+  --surface:        #FFFFFF;
+  --surface-2:      #FAF9F8;
+  --border:         #EDEBE9;
+  --border-dark:    #C8C6C4;
+  --text-primary:   #201F1E;
+  --text-secondary: #605E5C;
+  --text-muted:     #A19F9D;
+  --success:        #107C10;
+  --success-bg:     #DFF6DD;
+  --warning:        #797673;
+  --warning-bg:     #FFF4CE;
+  --danger:         #A4262C;
+  --danger-bg:      #FDE7E9;
+  --amber:          #D83B01;
+  --amber-bg:       #FDEDE3;
+  --sidebar-w:      220px;
+  --topbar-h:       48px;
+  --radius:         4px;
+  --radius-lg:      8px;
+  --shadow:         0 1.6px 3.6px rgba(0,0,0,.13), 0 .3px .9px rgba(0,0,0,.1);
+  --shadow-lg:      0 4.8px 14.4px rgba(0,0,0,.18), 0 .9px 2.7px rgba(0,0,0,.1);
+  --font:           'Segoe UI', system-ui, sans-serif;
+  --mono:           'Cascadia Code', 'Consolas', monospace;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text-primary); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+/* ── APP SHELL ── */
+.app-shell { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w); background: var(--ms-navy);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+}
+.sidebar-header {
+  padding: 0 16px; height: var(--topbar-h);
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.sidebar-app-icon { width: 28px; height: 28px; background: var(--ms-blue); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sidebar-app-icon svg { width: 16px; height: 16px; fill: white; }
+.sidebar-app-name { font-size: 14px; font-weight: 600; color: white; }
+.sidebar-nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+.nav-group-title { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1px; padding: 12px 16px 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; color: rgba(255,255,255,.75); cursor: pointer;
+  font-size: 13px; font-weight: 400; transition: all .15s;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,.08); color: white; }
+.nav-item.active { background: rgba(0,120,212,.3); color: white; border-left-color: var(--ms-blue); font-weight: 600; }
+.nav-item .ni-icon { font-size: 16px; flex-shrink: 0; opacity: .85; }
+.nav-item .ni-badge { margin-left: auto; background: var(--danger); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+.nav-item .ni-badge.blue { background: var(--ms-blue); }
+.sidebar-user { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; gap: 10px; }
+.user-av { width: 30px; height: 30px; border-radius: 50%; background: var(--ms-blue); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0; }
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 12px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role-label { font-size: 11px; color: rgba(255,255,255,.5); }
+
+/* ── MAIN ── */
+.main-area { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  height: var(--topbar-h); background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 24px; gap: 16px;
+  position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,.07);
+}
+.topbar-breadcrumb { display: flex; align-items: center; gap: 6px; flex: 1; }
+.topbar-breadcrumb span { font-size: 13px; color: var(--text-secondary); }
+.topbar-breadcrumb .crumb-active { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.topbar-breadcrumb .crumb-sep { color: var(--text-muted); font-size: 12px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.sync-badge { display: flex; align-items: center; gap: 6px; background: var(--success-bg); border: 1px solid #A7D7A7; border-radius: 12px; padding: 3px 10px; font-size: 11px; font-weight: 600; color: var(--success); }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+.btn-icon-sm { width: 32px; height: 32px; border: 1px solid var(--border-dark); border-radius: var(--radius); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-secondary); transition: all .15s; }
+.btn-icon-sm:hover { background: var(--ms-blue-xlight); border-color: var(--ms-blue); color: var(--ms-blue); }
+.ms-btn { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid var(--ms-blue); border-radius: var(--radius); background: var(--ms-blue); color: white; font-size: 12px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: all .15s; }
+.ms-btn:hover { background: var(--ms-blue-dark); }
+.ms-btn.ghost { background: var(--surface); color: var(--ms-blue); }
+.ms-btn.ghost:hover { background: var(--ms-blue-xlight); }
+
+/* ── PAGE ── */
+.page-content { flex: 1; padding: 24px; overflow-y: auto; }
+.page-header { margin-bottom: 20px; display: flex; align-items: flex-start; justify-content: space-between; }
+.page-title { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+.page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── FILTER BAR ── */
+.filter-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; box-shadow: var(--shadow); }
+.filter-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.filter-sep { width: 1px; height: 20px; background: var(--border); }
+.filter-select { border: 1px solid var(--border-dark); border-radius: var(--radius); padding: 5px 28px 5px 8px; font-family: var(--font); font-size: 12px; color: var(--text-primary); background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23605E5C'/%3E%3C/svg%3E") no-repeat right 8px center; appearance: none; cursor: pointer; outline: none; min-width: 130px; }
+.filter-select:focus { border-color: var(--ms-blue); }
+.search-wrap { position: relative; }
+.search-wrap input { border: 1px solid var(--border-dark); border-radius: var(--radius); padding: 5px 8px 5px 28px; font-family: var(--font); font-size: 12px; color: var(--text-primary); width: 180px; outline: none; }
+.search-wrap input:focus { border-color: var(--ms-blue); }
+.search-wrap::before { content: '🔍'; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; pointer-events: none; }
+.filter-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; padding: 5px 8px; border: 1px solid var(--border-dark); border-radius: var(--radius); background: var(--surface); transition: all .15s; }
+.filter-toggle:hover { border-color: var(--ms-blue); color: var(--ms-blue); background: var(--ms-blue-xlight); }
+.filter-toggle.on { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: box-shadow .15s, transform .15s; }
+.kpi-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.kpi-card.blue::before   { background: var(--ms-blue); }
+.kpi-card.green::before  { background: var(--success); }
+.kpi-card.amber::before  { background: var(--amber); }
+.kpi-card.red::before    { background: var(--danger); }
+.kpi-card.purple::before { background: #5C2D91; }
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.kpi-value { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.kpi-card.blue   .kpi-value { color: var(--ms-blue); }
+.kpi-card.green  .kpi-value { color: var(--success); }
+.kpi-card.amber  .kpi-value { color: var(--amber); }
+.kpi-card.red    .kpi-value { color: var(--danger); }
+.kpi-card.purple .kpi-value { color: #5C2D91; }
+.kpi-sub { font-size: 11px; color: var(--text-muted); }
+.kpi-icon { position: absolute; right: 14px; top: 14px; font-size: 22px; opacity: .12; }
+
+/* ── CARD ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+.card-header { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); flex: 1; }
+.card-subtitle { font-size: 11px; color: var(--text-muted); }
+.card-body { padding: 16px; }
+.card-body.no-pad { padding: 0; }
+.content-grid { display: grid; gap: 16px; }
+.content-grid.two-col { grid-template-columns: 1fr 1fr; }
+.content-grid.main-side { grid-template-columns: 1fr 340px; }
+
+/* ── BADGES ── */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge-green  { background: var(--success-bg); color: var(--success); }
+.badge-amber  { background: var(--amber-bg);   color: var(--amber); }
+.badge-red    { background: var(--danger-bg);  color: var(--danger); }
+.badge-blue   { background: var(--ms-blue-light); color: var(--ms-blue-dark); }
+.badge-gray   { background: #EDEBE9; color: var(--text-secondary); }
+.badge-purple { background: #EDE0FF; color: #5C2D91; }
+
+/* ── PROGRESS BAR ── */
+.progress-bar-bg { width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 3px; }
+.progress-bar-fill.green  { background: var(--success); }
+.progress-bar-fill.amber  { background: var(--amber); }
+.progress-bar-fill.red    { background: var(--danger); }
+.progress-bar-fill.blue   { background: var(--ms-blue); }
+.progress-bar-fill.purple { background: #5C2D91; }
+
+/* ── ALERT BOX ── */
+.alert-box { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+.alert-box.warning { background: var(--warning-bg); border: 1px solid #F0D980; color: #4A3800; }
+.alert-box.danger  { background: var(--danger-bg);  border: 1px solid #F3BCBE; color: #6E0811; }
+.alert-box.info    { background: var(--ms-blue-xlight); border: 1px solid var(--ms-blue-light); color: var(--ms-blue-dark); }
+.alert-icon { font-size: 16px; flex-shrink: 0; }
+
+/* ── TABLE ── */
+.ms-table { width: 100%; border-collapse: collapse; }
+.ms-table th { background: var(--surface-2); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border-dark); white-space: nowrap; }
+.ms-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-primary); vertical-align: middle; }
+.ms-table tr:last-child td { border-bottom: none; }
+.ms-table tr:hover td { background: var(--ms-blue-xlight); }
+.mini-av { width: 26px; height: 26px; border-radius: 50%; background: var(--ms-blue); color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* ── GANTT / ALLOCATION BAR CHART ── */
+.gantt-wrap { overflow-x: auto; }
+.gantt-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+.gantt-table th { background: var(--surface-2); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; padding: 8px 10px; border-bottom: 1px solid var(--border-dark); white-space: nowrap; }
+.gantt-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.gantt-table tr:hover td { background: var(--ms-blue-xlight); }
+.gantt-table .resource-cell { min-width: 180px; }
+.gantt-cell { min-width: 80px; position: relative; }
+
+/* Allocation fill cell */
+.alloc-bar-wrap { width: 100%; height: 22px; background: var(--border); border-radius: 3px; overflow: hidden; position: relative; }
+.alloc-bar { height: 100%; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; transition: width .3s; }
+.alloc-bar.green  { background: var(--success); }
+.alloc-bar.amber  { background: var(--amber); }
+.alloc-bar.red    { background: var(--danger); }
+.alloc-bar.blue   { background: var(--ms-blue); }
+.alloc-bar.over   { background: var(--danger); }
+
+/* ── DONUT ── */
+.donut-wrap { display: flex; align-items: center; gap: 16px; }
+.donut-legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+.donut-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.donut-legend-label { color: var(--text-secondary); flex: 1; }
+.donut-legend-val { font-weight: 700; color: var(--text-primary); }
+
+/* ── RESOURCE CARD ── */
+.resource-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+  cursor: pointer;
+}
+.resource-row:hover { background: var(--ms-blue-xlight); }
+.resource-row:last-child { border-bottom: none; }
+.resource-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+.resource-info { flex: 1; min-width: 0; }
+.resource-name { font-size: 13px; font-weight: 600; }
+.resource-role { font-size: 11px; color: var(--text-muted); }
+.resource-alloc { text-align: right; }
+.resource-alloc-pct { font-size: 18px; font-weight: 700; }
+.resource-alloc-pct.green  { color: var(--success); }
+.resource-alloc-pct.amber  { color: var(--amber); }
+.resource-alloc-pct.red    { color: var(--danger); }
+.resource-alloc-label { font-size: 10px; color: var(--text-muted); }
+
+/* ── PROJECT COLOR CHIPS ── */
+.proj-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.chip-blue   { background: #DEEAF7; color: #004578; }
+.chip-teal   { background: #D3F3EE; color: #006B5E; }
+.chip-purple { background: #EDE0FF; color: #5C2D91; }
+.chip-amber  { background: var(--amber-bg); color: #7A2000; }
+.chip-green  { background: var(--success-bg); color: #004B1C; }
+.chip-red    { background: var(--danger-bg); color: #6E0811; }
+
+/* ── TIMELINE HEADER ── */
+.timeline-month { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-secondary); padding: 6px 4px; background: var(--surface-2); border-bottom: 1px solid var(--border-dark); border-right: 1px solid var(--border); }
+.timeline-week { text-align: center; font-size: 10px; color: var(--text-muted); padding: 4px 2px; background: var(--surface-2); border-bottom: 1px solid var(--border-dark); border-right: 1px solid var(--border); }
+
+/* ── OVER-ALLOCATION INDICATOR ── */
+.over-badge { display: inline-flex; align-items: center; gap: 3px; background: var(--danger-bg); color: var(--danger); font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; border: 1px solid #F3BCBE; }
+
+/* ── TAB BAR ── */
+.tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab-item { padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+.tab-item:hover { color: var(--ms-blue); }
+.tab-item.active { color: var(--ms-blue); border-bottom-color: var(--ms-blue); font-weight: 600; }
+
+/* ── LEGEND ── */
+.legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── TOOLTIP ── */
+[data-tip] { position: relative; }
+[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #201F1E; color: white; font-size: 11px; padding: 4px 8px; border-radius: 3px; white-space: nowrap; z-index: 999; pointer-events: none; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 3px; }
+
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .content-grid.main-side { grid-template-columns: 1fr; }
+  .content-grid.two-col { grid-template-columns: 1fr; }
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.fade-up   { animation: fadeUp .4s ease both; }
+.fade-up-1 { animation: fadeUp .4s .05s ease both; }
+.fade-up-2 { animation: fadeUp .4s .10s ease both; }
+.fade-up-3 { animation: fadeUp .4s .15s ease both; }
+.fade-up-4 { animation: fadeUp .4s .20s ease both; }
+.fade-up-5 { animation: fadeUp .4s .25s ease both; }
+
+/* ── INTERACTIVE BARS ── */
+.bar-interactive { cursor: pointer; transition: opacity .15s, filter .15s; }
+.bar-interactive:hover { opacity: .82; filter: brightness(1.06); }
+
+/* ── CHART TOOLTIP ── */
+.chart-tooltip { position: absolute; background: #201F1E; color: white; font-size: 11px; padding: 6px 10px; border-radius: 4px; pointer-events: none; white-space: nowrap; z-index: 300; opacity: 0; transition: opacity .15s; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+.chart-tooltip.show { opacity: 1; }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 200; display: none; align-items: center; justify-content: center; animation: fadeIn .2s ease; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius-lg); width: 620px; max-width: 90vw; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,.25); animation: fadeUp .25s ease; }
+.modal-hdr { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.modal-title { font-size: 16px; font-weight: 600; flex: 1; }
+.modal-close { width: 28px; height: 28px; border: none; background: none; cursor: pointer; font-size: 18px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; border-radius: var(--radius); transition: background .15s; }
+.modal-close:hover { background: var(--danger-bg); color: var(--danger); }
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── KPI hover ── */
+.kpi-card { transition: box-shadow .2s, transform .2s; cursor: pointer; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-app-icon">
+        <svg viewBox="0 0 16 16"><path d="M2 2h5v5H2zm7 0h5v5H9zM2 9h5v5H2zm7 0h5v5H9z"/></svg>
+      </div>
+      <span class="sidebar-app-name">PM Dashboard</span>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-group-title">My Work</div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">🏠</span> My Overview</div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">📁</span> My Projects <span class="ni-badge blue">3</span></div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">✅</span> My Tasks <span class="ni-badge">4</span></div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">📅</span> Milestones</div>
+      <div class="nav-group-title">Resources</div>
+      <div class="nav-item active"><span class="ni-icon">👥</span> Resource Allocation <span class="ni-badge">2</span></div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">📊</span> Capacity Planning</div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">⏱️</span> Time Tracking</div>
+      <div class="nav-group-title">Reports</div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">📈</span> Project Status</div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">💰</span> Budget Overview</div>
+      <div class="nav-group-title">Settings</div>
+      <div class="nav-item" onclick="window.location.href='pm-manager-dashboard.html'"><span class="ni-icon">🔄</span> Sync Status</div>
+      <div class="nav-item"><span class="ni-icon">⚙️</span> Preferences</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-av" style="background:#7B4F12;">AK</div>
+      <div class="user-info">
+        <div class="user-name">Arjun Kumar</div>
+        <div class="user-role-label">Project Manager</div>
+      </div>
+      <div onclick="window.location.href='index.html'" title="Switch role" style="color:rgba(255,255,255,.4);cursor:pointer;font-size:14px;transition:color .15s;margin-left:auto" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.4)'">⎋</div>
+    </div>
+  </nav>
+
+  <!-- ── MAIN ── -->
+  <div class="main-area">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span class="crumb-active">Resource Allocation</span>
+      </div>
+      <div class="topbar-right">
+        <div class="sync-badge"><div class="sync-dot"></div> Synced 4 min ago</div>
+        <button class="btn-icon-sm" title="Refresh">↻</button>
+        <button class="btn-icon-sm" title="Notifications">🔔</button>
+        <button class="ms-btn ghost">⬇ Export</button>
+        <button class="ms-btn">+ Assign Resource</button>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Page Header -->
+      <div class="page-header fade-up">
+        <div>
+          <div class="page-title">Resource Allocation</div>
+          <div class="page-subtitle">Team allocation across all active projects · March – August 2025</div>
+        </div>
+      </div>
+
+      <!-- Alert: Over-allocation -->
+      <div class="alert-box danger fade-up-1">
+        <span class="alert-icon">🚨</span>
+        <div><strong>2 resources are over-allocated</strong> — Lena Park (120%) and Rachel King (110%) exceed 100% capacity. Review assignments to prevent burnout and project delays.</div>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="kpi-grid fade-up-2">
+        <div class="kpi-card blue" onclick="openModal('kpi-total')">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-label">Total Resources</div>
+          <div class="kpi-value">12</div>
+          <div class="kpi-sub">Across 3 projects</div>
+        </div>
+        <div class="kpi-card green" onclick="openModal('kpi-optimal')">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-label">Optimally Allocated</div>
+          <div class="kpi-value">7</div>
+          <div class="kpi-sub">50–90% utilisation</div>
+        </div>
+        <div class="kpi-card amber" onclick="openModal('kpi-under')">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-label">Under-utilised</div>
+          <div class="kpi-value">3</div>
+          <div class="kpi-sub">Below 50% capacity</div>
+        </div>
+        <div class="kpi-card red" onclick="openModal('kpi-over')">
+          <div class="kpi-icon">🔥</div>
+          <div class="kpi-label">Over-allocated</div>
+          <div class="kpi-value">2</div>
+          <div class="kpi-sub">Above 100% capacity</div>
+        </div>
+        <div class="kpi-card purple" onclick="openModal('kpi-avg')">
+          <div class="kpi-icon">📊</div>
+          <div class="kpi-label">Avg Utilisation</div>
+          <div class="kpi-value">74%</div>
+          <div class="kpi-sub">Team average</div>
+        </div>
+      </div>
+
+      <!-- ══ CHARTS ROW ══ -->
+      <div class="content-grid two-col" style="margin-bottom:20px;">
+
+        <!-- Chart 1: Team Utilisation Bar Chart -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Team Utilisation</div>
+              <div class="card-subtitle">Current allocation % per resource · 100% = full capacity</div>
+            </div>
+            <div class="legend" style="margin-left:auto;">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--success);"></div>Optimal</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div>High</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--danger);"></div>Over</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="position:relative;">
+              <div class="chart-tooltip" id="tt-util"></div>
+              <svg id="chart-utilisation" viewBox="0 0 520 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
+
+                <!-- Y-axis labels -->
+                <text x="28" y="18"  text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">120%</text>
+                <text x="28" y="52"  text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">100%</text>
+                <text x="28" y="86"  text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">80%</text>
+                <text x="28" y="120" text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">60%</text>
+                <text x="28" y="154" text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">40%</text>
+                <text x="28" y="188" text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">20%</text>
+
+                <!-- Gridlines -->
+                <line x1="32" y1="14"  x2="520" y2="14"  stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="32" y1="48"  x2="520" y2="48"  stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="32" y1="82"  x2="520" y2="82"  stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="32" y1="116" x2="520" y2="116" stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="32" y1="150" x2="520" y2="150" stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="32" y1="184" x2="520" y2="184" stroke="#EDEBE9" stroke-width="1"/>
+
+                <!-- 100% threshold line (danger) -->
+                <line x1="32" y1="48" x2="520" y2="48" stroke="#A4262C" stroke-width="1.5" stroke-dasharray="6 3"/>
+                <text x="524" y="52" font-size="9" fill="#A4262C" font-weight="600" font-family="Segoe UI">100%</text>
+
+                <!-- Base line -->
+                <line x1="32" y1="196" x2="520" y2="196" stroke="#C8C6C4" stroke-width="1"/>
+
+                <!-- Bars: 8 resources, each ~57px wide with 8px gap, starting x=40 -->
+                <!-- LP: 120% → height = (120/120)*182 = 182px → y = 196-182=14 → RED -->
+                <rect x="40"  y="14"  width="42" height="182" rx="3" fill="#A4262C" opacity="0.85" class="bar-interactive" onclick="openModal('chart-lp')" onmouseenter="showTip(event,'tt-util','Lena Park · 120% — OVER')" onmouseleave="hideTip('tt-util')"/>
+                <text x="61"  y="10"  text-anchor="middle" font-size="9" font-weight="700" fill="#A4262C" font-family="Segoe UI">120%</text>
+                <text x="61"  y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">LP</text>
+
+                <!-- RK: 110% → height = (110/120)*182 = 167 → y = 196-167=29 → RED -->
+                <rect x="98"  y="29"  width="42" height="167" rx="3" fill="#A4262C" opacity="0.85" class="bar-interactive" onclick="openModal('chart-rk')" onmouseenter="showTip(event,'tt-util','Rachel King · 110% — OVER')" onmouseleave="hideTip('tt-util')"/>
+                <text x="119" y="25"  text-anchor="middle" font-size="9" font-weight="700" fill="#A4262C" font-family="Segoe UI">110%</text>
+                <text x="119" y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">RK</text>
+
+                <!-- SC: 80% → height = (80/120)*182 = 121 → y = 196-121=75 → AMBER -->
+                <rect x="156" y="75"  width="42" height="121" rx="3" fill="#D83B01" opacity="0.85" class="bar-interactive" onclick="openModal('chart-sc')" onmouseenter="showTip(event,'tt-util','Sofia Chen · 80%')" onmouseleave="hideTip('tt-util')"/>
+                <text x="177" y="71"  text-anchor="middle" font-size="9" font-weight="700" fill="#D83B01" font-family="Segoe UI">80%</text>
+                <text x="177" y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">SC</text>
+
+                <!-- AK: 80% → height = 121 → y=75 → AMBER -->
+                <rect x="214" y="75"  width="42" height="121" rx="3" fill="#D83B01" opacity="0.85" class="bar-interactive" onclick="openModal('chart-ak')" onmouseenter="showTip(event,'tt-util','Arjun Kumar · 80%')" onmouseleave="hideTip('tt-util')"/>
+                <text x="235" y="71"  text-anchor="middle" font-size="9" font-weight="700" fill="#D83B01" font-family="Segoe UI">80%</text>
+                <text x="235" y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">AK</text>
+
+                <!-- SM: 70% → height = (70/120)*182 = 106 → y = 196-106=90 → GREEN -->
+                <rect x="272" y="90"  width="42" height="106" rx="3" fill="#107C10" opacity="0.85" class="bar-interactive" onclick="openModal('chart-sm')" onmouseenter="showTip(event,'tt-util','Sam Mitchell · 70%')" onmouseleave="hideTip('tt-util')"/>
+                <text x="293" y="86"  text-anchor="middle" font-size="9" font-weight="700" fill="#107C10" font-family="Segoe UI">70%</text>
+                <text x="293" y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">SM</text>
+
+                <!-- TN: 60% → height = (60/120)*182 = 91 → y = 196-91=105 → GREEN -->
+                <rect x="330" y="105" width="42" height="91"  rx="3" fill="#107C10" opacity="0.85" class="bar-interactive" onclick="openModal('chart-tn')" onmouseenter="showTip(event,'tt-util','Tom Nair · 60%')" onmouseleave="hideTip('tt-util')"/>
+                <text x="351" y="101" text-anchor="middle" font-size="9" font-weight="700" fill="#107C10" font-family="Segoe UI">60%</text>
+                <text x="351" y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">TN</text>
+
+                <!-- JD: 40% → height = (40/120)*182 = 61 → y = 196-61=135 → BLUE (under) -->
+                <rect x="388" y="135" width="42" height="61"  rx="3" fill="#0078D4" opacity="0.7" class="bar-interactive" onclick="openModal('chart-jd')" onmouseenter="showTip(event,'tt-util','James Daly · 40% — under')" onmouseleave="hideTip('tt-util')"/>
+                <text x="409" y="131" text-anchor="middle" font-size="9" font-weight="700" fill="#0078D4" font-family="Segoe UI">40%</text>
+                <text x="409" y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">JD</text>
+
+                <!-- PR: 30% → height = (30/120)*182 = 46 → y = 196-46=150 → BLUE (under) -->
+                <rect x="446" y="150" width="42" height="46"  rx="3" fill="#0078D4" opacity="0.7" class="bar-interactive" onclick="openModal('chart-pr')" onmouseenter="showTip(event,'tt-util','Priya Reddy · 30% — under')" onmouseleave="hideTip('tt-util')"/>
+                <text x="467" y="146" text-anchor="middle" font-size="9" font-weight="700" fill="#0078D4" font-family="Segoe UI">30%</text>
+                <text x="467" y="210" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">PR</text>
+
+              </svg>
+
+              <!-- X-axis name legend below -->
+              <div style="display:flex;gap:0;margin-top:4px;padding:0 40px;">
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">Lena Park</div>
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">Rachel King</div>
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">Sofia Chen</div>
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">Arjun Kumar</div>
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">Sam Mitchell</div>
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">Tom Nair</div>
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">James Daly</div>
+                <div style="flex:1;text-align:center;font-size:10px;color:var(--text-muted);">Priya Reddy</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart 2: Planned vs Actual Hours (Grouped Bar) -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Planned vs Actual Hours</div>
+              <div class="card-subtitle">Per project · current period</div>
+            </div>
+            <div class="legend" style="margin-left:auto;">
+              <div class="legend-item"><div class="legend-dot" style="background:#0078D4;"></div>Planned</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#008575;"></div>Actual</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#A4262C;opacity:.6;"></div>Over budget</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-tooltip" id="tt-hours"></div>
+              <svg viewBox="0 0 520 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
+
+              <!-- Y-axis labels (0 to 700h) -->
+              <text x="32" y="18"  text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">700h</text>
+              <text x="32" y="52"  text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">560h</text>
+              <text x="32" y="86"  text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">420h</text>
+              <text x="32" y="120" text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">280h</text>
+              <text x="32" y="154" text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">140h</text>
+              <text x="32" y="188" text-anchor="end" font-size="10" fill="#A19F9D" font-family="Segoe UI">0h</text>
+
+              <!-- Gridlines -->
+              <line x1="36" y1="14"  x2="510" y2="14"  stroke="#EDEBE9" stroke-width="1"/>
+              <line x1="36" y1="48"  x2="510" y2="48"  stroke="#EDEBE9" stroke-width="1"/>
+              <line x1="36" y1="82"  x2="510" y2="82"  stroke="#EDEBE9" stroke-width="1"/>
+              <line x1="36" y1="116" x2="510" y2="116" stroke="#EDEBE9" stroke-width="1"/>
+              <line x1="36" y1="150" x2="510" y2="150" stroke="#EDEBE9" stroke-width="1"/>
+              <line x1="36" y1="184" x2="510" y2="184" stroke="#EDEBE9" stroke-width="1"/>
+
+              <!-- Base line -->
+              <line x1="36" y1="184" x2="510" y2="184" stroke="#C8C6C4" stroke-width="1.5"/>
+
+              <!-- ── MobiChord: Planned=568h, Actual=635h (over) ── -->
+              <!-- Scale: 700h → 170px. 568/700*170=138 → y=184-138=46. Actual 635/700*170=154 → y=184-154=30 -->
+              <!-- Group centre x=120 -->
+              <rect x="72"  y="46"  width="38" height="138" rx="3" fill="#0078D4" opacity="0.85" class="bar-interactive" onclick="openModal('hours-mobi')" onmouseenter="showTip(event,'tt-hours','MobiChord · Planned: 568h')" onmouseleave="hideTip('tt-hours')"/>
+              <rect x="114" y="30"  width="38" height="154" rx="3" fill="#A4262C" opacity="0.7" class="bar-interactive" onclick="openModal('hours-mobi')" onmouseenter="showTip(event,'tt-hours','MobiChord · Actual: 635h (+67h over)')" onmouseleave="hideTip('tt-hours')"/>
+              <text x="72"  y="42"  font-size="9" font-weight="600" fill="#0078D4" font-family="Segoe UI">568h</text>
+              <text x="114" y="26"  font-size="9" font-weight="600" fill="#A4262C" font-family="Segoe UI">635h</text>
+              <text x="107" y="200" text-anchor="middle" font-size="10" font-weight="600" fill="#605E5C" font-family="Segoe UI">MobiChord</text>
+
+              <!-- ── Data Warehouse: Planned=240h, Actual=234h (under) ── -->
+              <!-- 240/700*170=58 → y=126. 234/700*170=57 → y=127 -->
+              <rect x="212" y="126" width="38" height="58" rx="3" fill="#0078D4" opacity="0.85" class="bar-interactive" onclick="openModal('hours-dw')" onmouseenter="showTip(event,'tt-hours','Data WH · Planned: 240h')" onmouseleave="hideTip('tt-hours')"/>
+              <rect x="254" y="127" width="38" height="57" rx="3" fill="#008575" opacity="0.85" class="bar-interactive" onclick="openModal('hours-dw')" onmouseenter="showTip(event,'tt-hours','Data WH · Actual: 234h')" onmouseleave="hideTip('tt-hours')"/>
+              <text x="212" y="122" font-size="9" font-weight="600" fill="#0078D4" font-family="Segoe UI">240h</text>
+              <text x="254" y="123" font-size="9" font-weight="600" fill="#008575" font-family="Segoe UI">234h</text>
+              <text x="247" y="200" text-anchor="middle" font-size="10" font-weight="600" fill="#605E5C" font-family="Segoe UI">Data WH</text>
+
+              <!-- ── Network Upgrade: Planned=192h, Actual=178h (under) ── -->
+              <!-- 192/700*170=47 → y=137. 178/700*170=43 → y=141 -->
+              <rect x="352" y="137" width="38" height="47" rx="3" fill="#0078D4" opacity="0.85" class="bar-interactive" onclick="openModal('hours-net')" onmouseenter="showTip(event,'tt-hours','Network · Planned: 192h')" onmouseleave="hideTip('tt-hours')"/>
+              <rect x="394" y="141" width="38" height="43" rx="3" fill="#008575" opacity="0.85" class="bar-interactive" onclick="openModal('hours-net')" onmouseenter="showTip(event,'tt-hours','Network · Actual: 178h')" onmouseleave="hideTip('tt-hours')"/>
+              <text x="352" y="133" font-size="9" font-weight="600" fill="#0078D4" font-family="Segoe UI">192h</text>
+              <text x="394" y="137" font-size="9" font-weight="600" fill="#008575" font-family="Segoe UI">178h</text>
+              <text x="387" y="200" text-anchor="middle" font-size="10" font-weight="600" fill="#605E5C" font-family="Segoe UI">Network Upg.</text>
+
+              <!-- Vertical separators -->
+              <line x1="188" y1="14" x2="188" y2="184" stroke="#EDEBE9" stroke-width="1" stroke-dasharray="3 3"/>
+              <line x1="328" y1="14" x2="328" y2="184" stroke="#EDEBE9" stroke-width="1" stroke-dasharray="3 3"/>
+
+              <!-- Over-budget annotation for MobiChord -->
+              <line x1="133" y1="38" x2="163" y2="22" stroke="#A4262C" stroke-width="1" stroke-dasharray="2 2"/>
+              <rect x="163" y="12" width="60" height="16" rx="3" fill="#FDE7E9"/>
+              <text x="193" y="23" text-anchor="middle" font-size="9" fill="#A4262C" font-weight="600" font-family="Segoe UI">+67h over</text>
+
+            </svg>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('by-resource', this)">By Resource</div>
+        <div class="tab-item" onclick="switchTab('by-project', this)">By Project</div>
+        <div class="tab-item" onclick="switchTab('timeline', this)">Timeline View</div>
+      </div>
+
+      <!-- ══ TAB: BY RESOURCE ══ -->
+      <div id="tab-by-resource">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <span class="filter-label">Filter:</span>
+          <select class="filter-select"><option>All Projects</option><option>MobiChord Mobility</option><option>Data Warehouse Rebuild</option><option>Network Upgrade</option></select>
+          <select class="filter-select"><option>All Roles</option><option>Project Manager</option><option>Business Analyst</option><option>Technical Lead</option><option>Developer</option><option>QA Engineer</option></select>
+          <select class="filter-select"><option>All Utilisation</option><option>Under-utilised (&lt;50%)</option><option>Optimal (50–90%)</option><option>Over-allocated (&gt;100%)</option></select>
+          <div class="filter-sep"></div>
+          <div class="search-wrap"><input type="text" placeholder="Search resource..."/></div>
+          <div class="filter-toggle on" onclick="this.classList.toggle('on')">🔥 Over-allocated Only</div>
+        </div>
+
+        <div class="content-grid main-side">
+          <!-- Main allocation table -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Resource Utilisation</div>
+              <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#EDEBE9;border:1px solid var(--border-dark);"></div>Under-utilised</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--success);"></div>Optimal</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div>High</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--danger);"></div>Over</div>
+              </div>
+            </div>
+            <div class="card-body no-pad">
+              <table class="ms-table">
+                <thead>
+                  <tr>
+                    <th>Resource</th>
+                    <th>Role</th>
+                    <th>Projects</th>
+                    <th style="min-width:160px;">Allocation</th>
+                    <th>Planned Hrs</th>
+                    <th>Actual Hrs</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+
+                  <!-- Over-allocated -->
+                  <tr style="background:#FFF4F4;">
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;background:#5C2D91;">LP</div>
+                        <div>
+                          <div style="font-weight:600;">Lena Park</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="80ece5eee1aef0e1f2ebc0eff2e7aee3efed">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-purple">Tech Lead</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-blue">MobiChord <strong>70%</strong></span>
+                        <span class="proj-chip chip-teal">Data WH <strong>50%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;">
+                          <div class="alloc-bar-wrap">
+                            <div class="alloc-bar over" style="width:100%;">120%</div>
+                          </div>
+                        </div>
+                        <span class="over-badge">⚠ 120%</span>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">192h</td>
+                    <td style="color:var(--danger);font-weight:600;">210h</td>
+                    <td><span class="badge badge-red">Over-allocated</span></td>
+                  </tr>
+
+                  <tr style="background:#FFF4F4;">
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;">RK</div>
+                        <div>
+                          <div style="font-weight:600;">Rachel King</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="087a696b606d64266361666f48677a6f266b6765">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-gray">Analyst</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-blue">MobiChord <strong>60%</strong></span>
+                        <span class="proj-chip chip-purple">Network <strong>50%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;">
+                          <div class="alloc-bar-wrap">
+                            <div class="alloc-bar over" style="width:100%;">110%</div>
+                          </div>
+                        </div>
+                        <span class="over-badge">⚠ 110%</span>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">176h</td>
+                    <td style="color:var(--danger);font-weight:600;">195h</td>
+                    <td><span class="badge badge-red">Over-allocated</span></td>
+                  </tr>
+
+                  <!-- Optimal -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;background:#7B4F12;">AK</div>
+                        <div>
+                          <div style="font-weight:600;">Arjun Kumar</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fb9a89918e95d5908e969a89bb94899cd5989496">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-blue">PM</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-blue">MobiChord <strong>50%</strong></span>
+                        <span class="proj-chip chip-teal">Data WH <strong>30%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="alloc-bar-wrap">
+                        <div class="alloc-bar green" style="width:80%;">80%</div>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">128h</td>
+                    <td>122h</td>
+                    <td><span class="badge badge-green">Optimal</span></td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;background:#107C10;">TN</div>
+                        <div>
+                          <div style="font-weight:600;">Tom Nair</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a9ddc6c487c7c8c0dbe9c6dbce87cac6c4">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-gray">Developer</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-blue">MobiChord <strong>60%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="alloc-bar-wrap">
+                        <div class="alloc-bar green" style="width:60%;">60%</div>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">96h</td>
+                    <td>88h</td>
+                    <td><span class="badge badge-green">Optimal</span></td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;background:#A4262C;">SC</div>
+                        <div>
+                          <div style="font-weight:600;">Sofia Chen</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d4e525b545c135e5558537d524f5a135e5250">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-gray">QA Engineer</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-blue">MobiChord <strong>40%</strong></span>
+                        <span class="proj-chip chip-purple">Network <strong>40%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="alloc-bar-wrap">
+                        <div class="alloc-bar amber" style="width:80%;">80%</div>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">128h</td>
+                    <td>119h</td>
+                    <td><span class="badge badge-green">Optimal</span></td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;background:#004B87;">SM</div>
+                        <div>
+                          <div style="font-weight:600;">Sam Mitchell</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="8bf8eae6a5e6e2ffe8e3eee7e7cbe4f9eca5e8e4e6">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-gray">Developer</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-teal">Data WH <strong>70%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="alloc-bar-wrap">
+                        <div class="alloc-bar green" style="width:70%;">70%</div>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">112h</td>
+                    <td>108h</td>
+                    <td><span class="badge badge-green">Optimal</span></td>
+                  </tr>
+
+                  <!-- Under-utilised -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;background:#008575;">PR</div>
+                        <div>
+                          <div style="font-weight:600;">Priya Reddy</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f18183988890df8394959588b19e8396df929e9c">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-gray">Designer</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-blue">MobiChord <strong>30%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="alloc-bar-wrap">
+                        <div class="alloc-bar blue" style="width:30%;">30%</div>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">48h</td>
+                    <td>41h</td>
+                    <td><span class="badge badge-amber">Under-utilised</span></td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="width:32px;height:32px;font-size:11px;background:#5C2D91;">JD</div>
+                        <div>
+                          <div style="font-weight:600;">James Daly</div>
+                          <div style="font-size:11px;color:var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="442e252921376a2025283d042b36236a272b29">[email&#160;protected]</a></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-gray">Architect</span></td>
+                    <td>
+                      <div style="display:flex;flex-direction:column;gap:3px;">
+                        <span class="proj-chip chip-purple">Network <strong>40%</strong></span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="alloc-bar-wrap">
+                        <div class="alloc-bar blue" style="width:40%;">40%</div>
+                      </div>
+                    </td>
+                    <td style="font-weight:600;">64h</td>
+                    <td>58h</td>
+                    <td><span class="badge badge-amber">Under-utilised</span></td>
+                  </tr>
+
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right panel -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <!-- Utilisation donut -->
+            <div class="card">
+              <div class="card-header"><div class="card-title">Team Utilisation</div></div>
+              <div class="card-body">
+                <div class="donut-wrap">
+                  <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#EDEBE9" stroke-width="12"/>
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#107C10" stroke-width="12" stroke-dasharray="55 165" stroke-dashoffset="25" stroke-linecap="round"/>
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#D83B01" stroke-width="12" stroke-dasharray="18 202" stroke-dashoffset="-30" stroke-linecap="round"/>
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#A4262C" stroke-width="12" stroke-dasharray="15 205" stroke-dashoffset="-48" stroke-linecap="round"/>
+                    <text x="45" y="43" text-anchor="middle" font-size="13" font-weight="700" fill="#201F1E" font-family="Segoe UI">74%</text>
+                    <text x="45" y="55" text-anchor="middle" font-size="9" fill="#A19F9D" font-family="Segoe UI">avg</text>
+                  </svg>
+                  <div style="flex:1;">
+                    <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--success)"></div><span class="donut-legend-label">Optimal</span><span class="donut-legend-val">7</span></div>
+                    <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--amber)"></div><span class="donut-legend-label">Under</span><span class="donut-legend-val">3</span></div>
+                    <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--danger)"></div><span class="donut-legend-label">Over</span><span class="donut-legend-val">2</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Allocation by Project -->
+            <div class="card">
+              <div class="card-header"><div class="card-title">Resources per Project</div></div>
+              <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+                      <span style="display:flex;align-items:center;gap:6px;"><span class="proj-chip chip-blue" style="padding:1px 6px;">MobiChord</span></span>
+                      <span style="font-weight:600;color:var(--text-secondary);">7 people</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill blue" style="width:58%;"></div></div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+                      <span style="display:flex;align-items:center;gap:6px;"><span class="proj-chip chip-teal" style="padding:1px 6px;">Data Warehouse</span></span>
+                      <span style="font-weight:600;color:var(--text-secondary);">4 people</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:33%;background:var(--ms-teal);"></div></div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+                      <span style="display:flex;align-items:center;gap:6px;"><span class="proj-chip chip-purple" style="padding:1px 6px;">Network Upgrade</span></span>
+                      <span style="font-weight:600;color:var(--text-secondary);">4 people</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill purple" style="width:33%;"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Available Capacity -->
+            <div class="card">
+              <div class="card-header"><div class="card-title">Available Capacity</div><span class="badge badge-green">3 available</span></div>
+              <div class="card-body no-pad">
+                <div class="resource-row">
+                  <div class="resource-avatar" style="background:#008575;">PR</div>
+                  <div class="resource-info">
+                    <div class="resource-name">Priya Reddy</div>
+                    <div class="resource-role">Designer</div>
+                  </div>
+                  <div class="resource-alloc">
+                    <div class="resource-alloc-pct amber">30%</div>
+                    <div class="resource-alloc-label">allocated</div>
+                  </div>
+                </div>
+                <div class="resource-row">
+                  <div class="resource-avatar" style="background:#5C2D91;">JD</div>
+                  <div class="resource-info">
+                    <div class="resource-name">James Daly</div>
+                    <div class="resource-role">Architect</div>
+                  </div>
+                  <div class="resource-alloc">
+                    <div class="resource-alloc-pct amber">40%</div>
+                    <div class="resource-alloc-label">allocated</div>
+                  </div>
+                </div>
+                <div class="resource-row">
+                  <div class="resource-avatar" style="background:#107C10;">TN</div>
+                  <div class="resource-info">
+                    <div class="resource-name">Tom Nair</div>
+                    <div class="resource-role">Developer</div>
+                  </div>
+                  <div class="resource-alloc">
+                    <div class="resource-alloc-pct green">60%</div>
+                    <div class="resource-alloc-label">allocated</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: BY PROJECT ══ -->
+      <div id="tab-by-project" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- MobiChord -->
+          <div class="card">
+            <div class="card-header">
+              <span class="proj-chip chip-blue" style="font-size:13px;padding:4px 12px;">📁 MobiChord Mobility Management</span>
+              <span style="font-size:12px;color:var(--text-muted);">PRJ0010677</span>
+              <span class="badge badge-amber" style="margin-left:auto;">At Risk</span>
+              <span class="badge badge-red">7 resources · 1 over-allocated</span>
+            </div>
+            <div class="card-body no-pad">
+              <table class="ms-table">
+                <thead><tr><th>Resource</th><th>Role</th><th>Allocation %</th><th style="min-width:140px;">Capacity Used</th><th>Planned Hrs</th><th>Actual Hrs</th><th>From</th><th>To</th></tr></thead>
+                <tbody>
+                  <tr style="background:#FFF4F4;"><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av" style="background:#5C2D91;">LP</div>Lena Park</div></td><td><span class="badge badge-purple">Tech Lead</span></td><td style="font-weight:700;color:var(--danger);">70% <span class="over-badge">⚠ over</span></td><td><div class="alloc-bar-wrap"><div class="alloc-bar over" style="width:100%;">70%</div></div></td><td>112h</td><td style="color:var(--danger);font-weight:600;">130h</td><td style="font-size:12px;">23 Nov 2021</td><td style="font-size:12px;color:var(--danger);">03 Jul 2025</td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av" style="background:#7B4F12;">AK</div>Arjun Kumar</div></td><td><span class="badge badge-blue">PM</span></td><td style="font-weight:700;">50%</td><td><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:50%;">50%</div></div></td><td>80h</td><td>76h</td><td style="font-size:12px;">23 Nov 2021</td><td style="font-size:12px;">03 Jul 2025</td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av">RK</div>Rachel King</div></td><td><span class="badge badge-gray">Analyst</span></td><td style="font-weight:700;">60%</td><td><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:60%;">60%</div></div></td><td>96h</td><td>102h</td><td style="font-size:12px;">01 Jan 2025</td><td style="font-size:12px;">03 Jul 2025</td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av" style="background:#107C10;">TN</div>Tom Nair</div></td><td><span class="badge badge-gray">Developer</span></td><td style="font-weight:700;">60%</td><td><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;">60%</div></div></td><td>96h</td><td>88h</td><td style="font-size:12px;">01 Jan 2025</td><td style="font-size:12px;">03 Jul 2025</td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av" style="background:#A4262C;">SC</div>Sofia Chen</div></td><td><span class="badge badge-gray">QA Engineer</span></td><td style="font-weight:700;">40%</td><td><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:40%;">40%</div></div></td><td>64h</td><td>59h</td><td style="font-size:12px;">01 Mar 2025</td><td style="font-size:12px;">03 Jul 2025</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Data Warehouse -->
+          <div class="card">
+            <div class="card-header">
+              <span class="proj-chip chip-teal" style="font-size:13px;padding:4px 12px;">📁 Data Warehouse Rebuild</span>
+              <span style="font-size:12px;color:var(--text-muted);">PRJ0010445</span>
+              <span class="badge badge-green" style="margin-left:auto;">On Track</span>
+              <span class="badge badge-blue">4 resources</span>
+            </div>
+            <div class="card-body no-pad">
+              <table class="ms-table">
+                <thead><tr><th>Resource</th><th>Role</th><th>Allocation %</th><th style="min-width:140px;">Capacity Used</th><th>Planned Hrs</th><th>Actual Hrs</th><th>From</th><th>To</th></tr></thead>
+                <tbody>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av" style="background:#5C2D91;">LP</div>Lena Park</div></td><td><span class="badge badge-purple">Tech Lead</span></td><td style="font-weight:700;">50%</td><td><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:50%;">50%</div></div></td><td>80h</td><td>80h</td><td style="font-size:12px;">01 Feb 2025</td><td style="font-size:12px;">20 Jun 2025</td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av" style="background:#004B87;">SM</div>Sam Mitchell</div></td><td><span class="badge badge-gray">Developer</span></td><td style="font-weight:700;">70%</td><td><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:70%;">70%</div></div></td><td>112h</td><td>108h</td><td style="font-size:12px;">15 Jan 2025</td><td style="font-size:12px;">20 Jun 2025</td></tr>
+                  <tr><td><div style="display:flex;align-items:center;gap:8px;"><div class="mini-av" style="background:#7B4F12;">AK</div>Arjun Kumar</div></td><td><span class="badge badge-blue">PM</span></td><td style="font-weight:700;">30%</td><td><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:30%;">30%</div></div></td><td>48h</td><td>46h</td><td style="font-size:12px;">15 Jan 2025</td><td style="font-size:12px;">20 Jun 2025</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: TIMELINE ══ -->
+      <div id="tab-timeline" style="display:none;">
+
+        <div class="alert-box info">
+          <span class="alert-icon">ℹ️</span>
+          <div>Timeline view shows allocation percentage per resource across each month. Bar width and colour indicate utilisation level. <strong>Red = over-allocated, Amber = high, Green = optimal, Gray = low.</strong></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Allocation Timeline — Mar to Aug 2025</div>
+            <div class="legend" style="margin-left:auto;">
+              <div class="legend-item"><div class="legend-dot" style="background:#EDEBE9;border:1px solid var(--border-dark);"></div>&lt;50%</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--success);"></div>50–80%</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div>80–100%</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--danger);"></div>&gt;100%</div>
+            </div>
+          </div>
+          <div class="card-body no-pad">
+            <div class="gantt-wrap">
+              <table class="gantt-table">
+                <thead>
+                  <tr>
+                    <th class="resource-cell" style="min-width:180px;">Resource</th>
+                    <th class="timeline-month">Mar 2025</th>
+                    <th class="timeline-month">Apr 2025</th>
+                    <th class="timeline-month">May 2025</th>
+                    <th class="timeline-month">Jun 2025</th>
+                    <th class="timeline-month">Jul 2025</th>
+                    <th class="timeline-month">Aug 2025</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Lena Park -->
+                  <tr style="background:#FFF4F4;">
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="background:#5C2D91;">LP</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">Lena Park</div>
+                          <div style="font-size:11px;color:var(--text-muted);">Tech Lead</div>
+                        </div>
+                        <span class="over-badge" style="margin-left:4px;">120%</span>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar over" style="width:100%;" data-tip="MobiChord 70% + Data WH 50%">120%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar over" style="width:100%;" data-tip="MobiChord 70% + Data WH 50%">120%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar over" style="width:100%;" data-tip="MobiChord 70% + Data WH 50%">120%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:70%;" data-tip="MobiChord 70% only (Data WH ends Jun)">70%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:70%;" data-tip="MobiChord 70%">70%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+
+                  <!-- Rachel King -->
+                  <tr style="background:#FFF4F4;">
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av">RK</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">Rachel King</div>
+                          <div style="font-size:11px;color:var(--text-muted);">Analyst</div>
+                        </div>
+                        <span class="over-badge" style="margin-left:4px;">110%</span>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar over" style="width:100%;" data-tip="MobiChord 60% + Network 50%">110%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar over" style="width:100%;" data-tip="MobiChord 60% + Network 50%">110%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar over" style="width:100%;" data-tip="MobiChord 60% + Network 50%">110%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;" data-tip="MobiChord 60%">60%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;" data-tip="MobiChord 60%">60%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+
+                  <!-- Arjun Kumar -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="background:#7B4F12;">AK</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">Arjun Kumar</div>
+                          <div style="font-size:11px;color:var(--text-muted);">Project Manager</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:80%;" data-tip="MobiChord 50% + Data WH 30%">80%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:80%;" data-tip="MobiChord 50% + Data WH 30%">80%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:80%;" data-tip="MobiChord 50% + Data WH 30%">80%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:50%;" data-tip="MobiChord 50%">50%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:50%;" data-tip="MobiChord 50%">50%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+
+                  <!-- Tom Nair -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="background:#107C10;">TN</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">Tom Nair</div>
+                          <div style="font-size:11px;color:var(--text-muted);">Developer</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;" data-tip="MobiChord 60%">60%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;">60%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;">60%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;">60%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:60%;">60%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+
+                  <!-- Sofia Chen -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="background:#A4262C;">SC</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">Sofia Chen</div>
+                          <div style="font-size:11px;color:var(--text-muted);">QA Engineer</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:80%;" data-tip="MobiChord 40% + Network 40%">80%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:80%;">80%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:80%;">80%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar amber" style="width:80%;">80%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:40%;" data-tip="MobiChord 40% only">40%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+
+                  <!-- Sam Mitchell -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="background:#004B87;">SM</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">Sam Mitchell</div>
+                          <div style="font-size:11px;color:var(--text-muted);">Developer</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:70%;" data-tip="Data WH 70%">70%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:70%;">70%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:70%;">70%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar green" style="width:70%;">70%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+
+                  <!-- Priya Reddy -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="background:#008575;">PR</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">Priya Reddy</div>
+                          <div style="font-size:11px;color:var(--text-muted);">Designer</div>
+                        </div>
+                        <span class="badge badge-amber" style="font-size:10px;padding:1px 5px;margin-left:4px;">Under</span>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:30%;" data-tip="MobiChord 30%">30%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:30%;">30%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:30%;">30%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:30%;">30%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+
+                  <!-- James Daly -->
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mini-av" style="background:#5C2D91;">JD</div>
+                        <div>
+                          <div style="font-weight:600;font-size:13px;">James Daly</div>
+                          <div style="font-size:11px;color:var(--text-muted);">Architect</div>
+                        </div>
+                        <span class="badge badge-amber" style="font-size:10px;padding:1px 5px;margin-left:4px;">Under</span>
+                      </div>
+                    </td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:40%;" data-tip="Network 40%">40%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:40%;">40%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:40%;">40%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:40%;">40%</div></div></td>
+                    <td class="gantt-cell"><div class="alloc-bar-wrap"><div class="alloc-bar blue" style="width:0%;"></div></div><span style="font-size:11px;color:var(--text-muted);">Free</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL ══ -->
+<div class="modal-overlay" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-title">Detail</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button onclick="closeModal()" style="padding:6px 14px;border:1px solid var(--border-dark);border-radius:var(--radius);background:white;font-family:var(--font);font-size:13px;cursor:pointer">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TAB SWITCHING ──
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-by-resource').style.display = tab === 'by-resource' ? 'block' : 'none';
+  document.getElementById('tab-by-project').style.display  = tab === 'by-project'  ? 'block' : 'none';
+  document.getElementById('tab-timeline').style.display    = tab === 'timeline'    ? 'block' : 'none';
+}
+
+// ── TOOLTIP ──
+function showTip(e, id, text) {
+  const tt = document.getElementById(id);
+  if (!tt) return;
+  const wrap = tt.parentElement.getBoundingClientRect();
+  tt.textContent = text;
+  tt.style.left = (e.clientX - wrap.left + 10) + 'px';
+  tt.style.top  = (e.clientY - wrap.top  - 36) + 'px';
+  tt.classList.add('show');
+}
+function hideTip(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+}
+
+// ── MODAL DATA ──
+const modals = {
+  'kpi-total':   { title: '12 Resources — Full Breakdown', body: buildResourceList('all') },
+  'kpi-optimal': { title: '7 Optimally Allocated Resources', body: buildResourceList('optimal') },
+  'kpi-under':   { title: '3 Under-utilised Resources', body: buildResourceList('under') },
+  'kpi-over':    { title: '2 Over-allocated Resources — Action Required', body: buildResourceList('over') },
+  'kpi-avg':     { title: 'Team Average Utilisation: 74%', body: buildAvgDetail() },
+  'chart-lp':    { title: 'Lena Park — Allocation Detail', body: buildPersonDetail('Lena Park', 120, ['MobiChord 70%','Data WH 50%'], 'Tech Lead') },
+  'chart-rk':    { title: 'Rachel King — Allocation Detail', body: buildPersonDetail('Rachel King', 110, ['MobiChord 60%','Network 50%'], 'Analyst') },
+  'chart-sc':    { title: 'Sofia Chen — Allocation Detail', body: buildPersonDetail('Sofia Chen', 80, ['MobiChord 40%','Network 40%'], 'QA Engineer') },
+  'chart-ak':    { title: 'Arjun Kumar — Allocation Detail', body: buildPersonDetail('Arjun Kumar', 80, ['MobiChord 50%','Data WH 30%'], 'Project Manager') },
+  'chart-sm':    { title: 'Sam Mitchell — Allocation Detail', body: buildPersonDetail('Sam Mitchell', 70, ['Data WH 70%'], 'Developer') },
+  'chart-tn':    { title: 'Tom Nair — Allocation Detail', body: buildPersonDetail('Tom Nair', 60, ['MobiChord 60%'], 'Developer') },
+  'chart-jd':    { title: 'James Daly — Allocation Detail', body: buildPersonDetail('James Daly', 40, ['Network 40%'], 'Architect') },
+  'chart-pr':    { title: 'Priya Reddy — Allocation Detail', body: buildPersonDetail('Priya Reddy', 30, ['MobiChord 30%'], 'Designer') },
+  'hours-mobi':  { title: 'MobiChord — Hours Detail', body: buildHoursDetail('MobiChord Mobility', 568, 635) },
+  'hours-dw':    { title: 'Data Warehouse — Hours Detail', body: buildHoursDetail('Data Warehouse Rebuild', 240, 234) },
+  'hours-net':   { title: 'Network Upgrade — Hours Detail', body: buildHoursDetail('Network Infrastructure', 192, 178) },
+};
+
+function buildResourceList(filter) {
+  const all = [
+    {n:'Lena Park',     r:'Tech Lead',  pct:120, s:'over',    projects:'MobiChord 70% · Data WH 50%'},
+    {n:'Rachel King',   r:'Analyst',    pct:110, s:'over',    projects:'MobiChord 60% · Network 50%'},
+    {n:'Sofia Chen',    r:'QA Engineer',pct:80,  s:'optimal', projects:'MobiChord 40% · Network 40%'},
+    {n:'Arjun Kumar',   r:'PM',         pct:80,  s:'optimal', projects:'MobiChord 50% · Data WH 30%'},
+    {n:'Sam Mitchell',  r:'Developer',  pct:70,  s:'optimal', projects:'Data WH 70%'},
+    {n:'Tom Nair',      r:'Developer',  pct:60,  s:'optimal', projects:'MobiChord 60%'},
+    {n:'Priya Reddy',   r:'Designer',   pct:30,  s:'under',   projects:'MobiChord 30%'},
+    {n:'James Daly',    r:'Architect',  pct:40,  s:'under',   projects:'Network 40%'},
+  ];
+  const filtered = filter === 'all' ? all : all.filter(r => r.s === filter);
+  return filtered.map(r => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EDEBE9">
+      <div style="width:36px;height:36px;border-radius:50%;background:${r.s==='over'?'#A4262C':r.s==='under'?'#0078D4':'#107C10'};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${r.n.split(' ').map(w=>w[0]).join('')}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${r.n}</div>
+        <div style="font-size:11px;color:#A19F9D">${r.r} · ${r.projects}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:16px;font-weight:700;color:${r.pct>100?'#A4262C':r.pct<50?'#0078D4':'#107C10'}">${r.pct}%</div>
+        <div style="width:80px;height:6px;background:#EDEBE9;border-radius:3px;margin-top:4px;overflow:hidden"><div style="height:100%;width:${Math.min(r.pct,100)}%;background:${r.pct>100?'#A4262C':r.pct<50?'#0078D4':'#107C10'};border-radius:3px"></div></div>
+      </div>
+    </div>`).join('');
+}
+
+function buildPersonDetail(name, pct, projects, role) {
+  const color = pct > 100 ? '#A4262C' : pct < 50 ? '#0078D4' : '#107C10';
+  const status = pct > 100 ? 'Over-allocated' : pct < 50 ? 'Under-utilised' : 'Optimal';
+  return `
+    <div style="text-align:center;padding:16px 0 24px">
+      <div style="font-size:42px;font-weight:700;color:${color}">${pct}%</div>
+      <div style="font-size:13px;color:#605E5C;margin:4px 0 8px">${role} · ${status}</div>
+      <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${pct>100?'#FDE7E9':pct<50?'#EFF6FC':'#DFF6DD'};color:${color}">${status}</span>
+    </div>
+    <div style="width:100%;height:10px;background:#EDEBE9;border-radius:5px;overflow:hidden;margin-bottom:20px">
+      <div style="height:100%;width:${Math.min(pct,100)}%;background:${color};border-radius:5px"></div>
+    </div>
+    <div style="font-weight:600;margin-bottom:10px;font-size:13px">Project Assignments</div>
+    ${projects.map(p => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EDEBE9;font-size:13px"><span>${p.split(' ')[0]}</span><strong>${p.split(' ').slice(1).join(' ')}</strong></div>`).join('')}
+    ${pct > 100 ? '<div style="margin-top:16px;padding:10px 14px;background:#FDE7E9;border:1px solid #F3BCBE;border-radius:4px;font-size:12px;color:#6E0811">⚠️ <strong>Action required:</strong> Reduce allocation by '+( pct-100)+'% to bring within capacity.</div>' : ''}`;
+}
+
+function buildAvgDetail() {
+  return `
+    <div style="margin-bottom:16px;font-size:13px;color:#605E5C">Average team utilisation across all 12 resources and 3 projects.</div>
+    ${[['Over-allocated (>100%)', 2, '#A4262C'],['Optimal (50–90%)', 7, '#107C10'],['Under-utilised (<50%)', 3, '#0078D4']].map(([label,count,color])=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EDEBE9">
+      <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
+      <span style="flex:1;font-size:13px">${label}</span>
+      <strong style="color:${color}">${count} resources</strong>
+    </div>`).join('')}
+    <div style="margin-top:16px;padding:10px 14px;background:#EFF6FC;border:1px solid #C7E0F4;border-radius:4px;font-size:12px;color:#005A9E">
+      ℹ️ Target range is 70–85% for sustainable team utilisation.
+    </div>`;
+}
+
+function buildHoursDetail(project, planned, actual) {
+  const over = actual > planned;
+  const diff = Math.abs(actual - planned);
+  return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="background:#EFF6FC;border:1px solid #C7E0F4;border-radius:6px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:600;color:#605E5C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Planned Hours</div>
+        <div style="font-size:28px;font-weight:700;color:#0078D4">${planned}h</div>
+      </div>
+      <div style="background:${over?'#FDE7E9':'#DFF6DD'};border:1px solid ${over?'#F3BCBE':'#A7D7A7'};border-radius:6px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:600;color:#605E5C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Actual Hours</div>
+        <div style="font-size:28px;font-weight:700;color:${over?'#A4262C':'#107C10'}">${actual}h</div>
+      </div>
+    </div>
+    <div style="padding:10px 14px;background:${over?'#FDE7E9':'#DFF6DD'};border:1px solid ${over?'#F3BCBE':'#A7D7A7'};border-radius:4px;font-size:13px;color:${over?'#6E0811':'#004B1C'}">
+      ${over ? '⚠️' : '✅'} ${project} is <strong>${diff}h ${over?'over':'under'} budget</strong> (${Math.round(diff/planned*100)}% ${over?'overspend':'savings'}).
+    </div>`;
+}
+
+function openModal(key) {
+  const d = modals[key];
+  if (!d) return;
+  document.getElementById('modal-title').textContent = d.title;
+  document.getElementById('modal-body').innerHTML = d.body;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Insights — PM Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&family=Cascadia+Code:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --blue:#0078D4;--blue-d:#005A9E;--blue-l:#C7E0F4;--blue-xl:#EFF6FC;
+  --navy:#003B73;--teal:#008575;
+  --bg:#F8F8F7;--surface:#FFF;--surface2:#FAF9F8;
+  --border:#E8E6E3;--border-d:#C8C6C4;
+  --text:#1A1A1A;--text2:#505050;--muted:#9A9A9A;
+  --green:#107C10;--green-bg:#DFF6DD;--green-d:#004B1C;
+  --amber:#D83B01;--amber-bg:#FFF4CE;--amber-d:#7A2000;
+  --red:#A4262C;--red-bg:#FDE7E9;--red-d:#6E0811;
+  --purple:#5C2D91;--purple-bg:#EDE0FF;
+  --ai:#6B47DC;--ai-bg:#F0EBFF;--ai-l:#DDD0FF;
+  --font:'Segoe UI',system-ui,sans-serif;
+  --mono:'Cascadia Code','Consolas',monospace;
+  --r:6px;--rl:10px;
+  --sh:0 1px 4px rgba(0,0,0,.08),0 .5px 1px rgba(0,0,0,.06);
+  --sh2:0 4px 16px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08);
+}
+
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+  height:52px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  position:sticky;top:0;z-index:50;
+  box-shadow:var(--sh);
+}
+.tb-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.tb-back{
+  display:flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:500;color:var(--blue);
+  cursor:pointer;border:none;background:none;font-family:var(--font);
+  padding:4px 8px;border-radius:var(--r);transition:background .15s;
+}
+.tb-back:hover{background:var(--blue-xl)}
+.tb-divider{width:1px;height:20px;background:var(--border-d)}
+.tb-title-wrap{}
+.tb-title{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.tb-sub{font-size:11px;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:10px}
+.agent-status{
+  display:flex;align-items:center;gap:7px;
+  background:var(--green-bg);
+  border:1px solid #A7D7A7;
+  border-radius:20px;
+  padding:5px 14px;
+  font-size:12px;font-weight:600;color:var(--green);
+}
+.agent-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,124,16,.3)}50%{opacity:.8;box-shadow:0 0 0 4px rgba(16,124,16,0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes typeCursor{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes expandIn{from{opacity:0;max-height:0}to{opacity:1;max-height:600px}}
+
+.tb-bti{
+  width:32px;height:32px;border:1px solid var(--border-d);
+  border-radius:var(--r);background:var(--surface);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:var(--text2);transition:all .15s;
+}
+.tb-bti:hover{background:var(--blue-xl);border-color:var(--blue);color:var(--blue)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;max-width:1100px;width:100%;margin:0 auto;padding:0 24px 120px}
+
+/* ── AGENT HEADER ── */
+.agent-header{
+  padding:28px 0 20px;
+  display:flex;align-items:flex-start;gap:16px;
+  animation:fadeUp .4s ease;
+}
+.agent-avatar{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,var(--ai),#9B6AFF);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(107,71,220,.3);
+}
+.agent-header-text{flex:1}
+.agent-name{font-size:18px;font-weight:700;color:var(--text);margin-bottom:2px}
+.agent-context{font-size:13px;color:var(--text2);margin-bottom:10px}
+.agent-summary{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:3px solid var(--ai);
+  border-radius:var(--r);
+  padding:12px 16px;
+  font-size:13px;
+  color:var(--text2);
+  line-height:1.7;
+  box-shadow:var(--sh);
+}
+.agent-summary strong{color:var(--text)}
+
+/* ── KPI ROW ── */
+.kpi-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:24px;
+  animation:fadeUp .4s .05s ease both;
+}
+.kpi{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--rl);
+  padding:16px 18px;
+  box-shadow:var(--sh);
+  cursor:pointer;
+  transition:box-shadow .2s,transform .2s;
+  position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.ok::before{background:var(--green)}
+.kpi.warn::before{background:var(--amber)}
+.kpi.alert::before{background:var(--red)}
+.kpi.ai::before{background:linear-gradient(90deg,var(--ai),#9B6AFF)}
+.kpi:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.kpi-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi.ok .kpi-val{color:var(--green)}
+.kpi.warn .kpi-val{color:var(--amber)}
+.kpi.alert .kpi-val{color:var(--red)}
+.kpi.ai .kpi-val{color:var(--ai)}
+.kpi-trend{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600}
+.kpi-trend.up{color:var(--green)}.kpi-trend.down{color:var(--red)}.kpi-trend.flat{color:var(--muted)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi-bar{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.kpi.ok .kpi-bar-fill{background:var(--green)}
+.kpi.warn .kpi-bar-fill{background:var(--amber)}
+.kpi.alert .kpi-bar-fill{background:var(--red)}
+
+/* ── TWO COL ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;animation:fadeUp .4s .1s ease both}
+
+/* ── PANEL ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden}
+.panel-hdr{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.panel-hdr-icon{font-size:16px;flex-shrink:0}
+.panel-title{font-size:13px;font-weight:700;color:var(--text);flex:1;text-transform:uppercase;letter-spacing:.4px}
+.panel-count{
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:white;flex-shrink:0;
+}
+.panel-count.red{background:var(--red)}
+.panel-count.blue{background:var(--blue)}
+.panel-count.ai{background:var(--ai)}
+.panel-body{padding:0}
+.show-more{
+  display:block;padding:10px 18px;
+  font-size:12px;font-weight:600;color:var(--blue);
+  cursor:pointer;border-top:1px solid var(--border);
+  text-align:left;transition:background .15s;
+}
+.show-more:hover{background:var(--blue-xl)}
+
+/* ── INSIGHT ITEM ── */
+.insight-item{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  transition:background .15s;
+  position:relative;
+}
+.insight-item:last-child{border-bottom:none}
+.insight-item:hover{background:#FAFAF9}
+.insight-item.expanded{background:var(--surface2)}
+.ii-top{display:flex;align-items:flex-start;gap:10px}
+.ii-dot{
+  width:8px;height:8px;border-radius:50%;
+  flex-shrink:0;margin-top:5px;
+}
+.ii-dot.red{background:var(--red)}
+.ii-dot.amber{background:var(--amber)}
+.ii-dot.blue{background:var(--blue)}
+.ii-dot.green{background:var(--green)}
+.ii-dot.ai{background:var(--ai)}
+.ii-content{flex:1;min-width:0}
+.ii-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:3px}
+.ii-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
+.ii-tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.tag.urgent{background:#FDE7E9;color:var(--red);border:1px solid #F3BCBE}
+.tag.warn{background:var(--amber-bg);color:#7A3000;border:1px solid #F0D980}
+.tag.info{background:var(--blue-xl);color:var(--blue-d);border:1px solid var(--blue-l)}
+.tag.ok{background:var(--green-bg);color:var(--green-d);border:1px solid #A7D7A7}
+.tag.ai{background:var(--ai-bg);color:var(--ai);border:1px solid var(--ai-l)}
+.tag.purple{background:var(--purple-bg);color:var(--purple);border:1px solid #C9AAFF}
+.ii-chevron{font-size:12px;color:var(--muted);flex-shrink:0;margin-top:3px;transition:transform .2s}
+.ii-chevron.open{transform:rotate(90deg)}
+
+/* ── DRILL DOWN PANEL ── */
+.drill-panel{
+  display:none;
+  margin:0 18px 14px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  overflow:hidden;
+  animation:expandIn .25s ease;
+}
+.drill-panel.open{display:block}
+.drill-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.drill-section:last-child{border-bottom:none}
+.drill-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.drill-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.drill-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.drill-stat-label{font-size:10px;color:var(--muted);margin-bottom:3px}
+.drill-stat-val{font-size:18px;font-weight:700;color:var(--text)}
+.drill-stat-val.red{color:var(--red)}.drill-stat-val.amber{color:var(--amber)}.drill-stat-val.green{color:var(--green)}.drill-stat-val.blue{color:var(--blue)}
+.drill-task-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.drill-task-row:last-child{border-bottom:none}
+.drill-task-name{flex:1;font-weight:500}
+.drill-task-meta{color:var(--muted);font-size:11px}
+.drill-rec{
+  background:linear-gradient(135deg,#F5F0FF,#EDE0FF);
+  border:1px solid var(--ai-l);
+  border-radius:var(--r);
+  padding:10px 14px;
+  font-size:12px;color:var(--ai);
+  line-height:1.6;
+}
+.drill-rec strong{color:var(--purple)}
+.drill-actions{display:flex;gap:8px;padding-top:4px}
+.drill-btn{
+  padding:5px 12px;border-radius:var(--r);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:var(--font);border:none;transition:all .15s;
+}
+.drill-btn.primary{background:var(--ai);color:white}
+.drill-btn.primary:hover{background:#5338C0}
+.drill-btn.ghost{background:var(--surface);color:var(--text2);border:1px solid var(--border-d)}
+.drill-btn.ghost:hover{background:var(--surface2);color:var(--text)}
+
+/* ── ACTIVITY ITEM ── */
+.activity-item{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
+.activity-item:last-child{border-bottom:none}
+.ai-icon-wrap{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.ai-icon-wrap.running{background:#FFF4CE;border:1px solid #F0D980}
+.ai-icon-wrap.done{background:var(--green-bg);border:1px solid #A7D7A7}
+.ai-icon-wrap.info{background:var(--blue-xl);border:1px solid var(--blue-l)}
+.ai-text{flex:1}
+.ai-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.ai-meta{font-size:11px;color:var(--muted)}
+.ai-savings{font-size:11px;font-weight:600;color:var(--green)}
+
+/* ── AI INSIGHTS BAND ── */
+.ai-band{
+  background:linear-gradient(135deg,#2D1B69,#4A2D9C,#6B47DC);
+  border-radius:var(--rl);
+  padding:20px 24px;
+  margin-bottom:16px;
+  color:white;
+  animation:fadeUp .4s .15s ease both;
+  position:relative;
+  overflow:hidden;
+}
+.ai-band::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(255,255,255,.05);
+}
+.ai-band::after{
+  content:'';position:absolute;bottom:-20px;right:60px;
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(255,255,255,.05);
+}
+.ai-band-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ai-band-icon{font-size:20px}
+.ai-band-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.7}
+.ai-band-text{font-size:14px;line-height:1.7;opacity:.95;max-width:800px}
+.ai-band-text strong{color:#C9B8FF}
+
+/* ── CHAT AREA ── */
+.chat-fixed{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:12px 24px 16px;
+  box-shadow:0 -4px 20px rgba(0,0,0,.08);
+}
+.chat-inner{max-width:1052px;margin:0 auto}
+.chat-messages{
+  max-height:200px;overflow-y:auto;
+  margin-bottom:10px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.chat-messages:empty{display:none}
+.chat-msg{display:flex;gap:8px;animation:slideIn .2s ease}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-bubble{
+  max-width:70%;padding:8px 12px;border-radius:10px;
+  font-size:13px;line-height:1.5;
+}
+.chat-msg.user .chat-bubble{background:var(--ai);color:white;border-radius:10px 10px 2px 10px}
+.chat-msg.agent .chat-bubble{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px 10px 10px 2px}
+.chat-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+.chat-av.agent{background:linear-gradient(135deg,var(--ai),#9B6AFF);color:white}
+.chat-av.user{background:#7B4F12;color:white}
+.typing-dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--muted);animation:typeDot 1.2s infinite;margin:0 1px}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes typeDot{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+.chat-input-row{display:flex;align-items:center;gap:10px}
+.chat-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chat-sug{
+  padding:5px 12px;border:1px solid var(--border-d);border-radius:16px;
+  font-size:12px;color:var(--text2);cursor:pointer;background:var(--surface);
+  transition:all .15s;white-space:nowrap;font-family:var(--font);
+}
+.chat-sug:hover{border-color:var(--ai);color:var(--ai);background:var(--ai-bg)}
+.chat-input-wrap{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:var(--surface);
+  border:1.5px solid var(--border-d);
+  border-radius:24px;
+  padding:8px 14px;
+  transition:border-color .15s,box-shadow .15s;
+}
+.chat-input-wrap:focus-within{border-color:var(--ai);box-shadow:0 0 0 2px rgba(107,71,220,.12)}
+.chat-plus{
+  width:28px;height:28px;border-radius:50%;background:var(--surface2);
+  border:1px solid var(--border-d);display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;flex-shrink:0;transition:all .15s;color:var(--text2);
+}
+.chat-plus:hover{background:var(--ai-bg);border-color:var(--ai);color:var(--ai)}
+.chat-input{
+  flex:1;border:none;outline:none;font-family:var(--font);font-size:14px;
+  color:var(--text);background:transparent;
+}
+.chat-input::placeholder{color:var(--muted)}
+.chat-mic{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;cursor:pointer;color:var(--text2);
+  border:none;background:none;transition:color .15s;
+}
+.chat-mic:hover{color:var(--ai)}
+.chat-send{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--ai);color:white;border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;flex-shrink:0;
+  transition:background .15s,transform .1s;
+}
+.chat-send:hover{background:#5338C0}
+.chat-send:active{transform:scale(.95)}
+.chat-send:disabled{background:var(--border-d);cursor:not-allowed}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .drill-stat-row{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="tb-left">
+    <button class="tb-back" onclick="history.back()">← Back</button>
+    <div class="tb-divider"></div>
+    <div class="tb-title-wrap">
+      <div class="tb-title">PM AI Agent</div>
+      <div class="tb-sub">Arjun Kumar · Project Manager</div>
+    </div>
+  </div>
+  <div class="tb-right">
+    <div class="agent-status"><div class="agent-dot"></div>Agent is running</div>
+    <button class="tb-bti" title="Refresh insights">↻</button>
+    <button class="tb-bti" title="Settings">⚙</button>
+  </div>
+</div>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="main">
+
+  <!-- Agent Header -->
+  <div class="agent-header">
+    <div class="agent-avatar">🤖</div>
+    <div class="agent-header-text">
+      <div class="agent-name">Project Intelligence Agent</div>
+      <div class="agent-context">Monitoring 3 projects · 22 tasks · Last analysed 4 minutes ago</div>
+      <div class="agent-summary">
+        You have <strong>4 overdue tasks</strong> across MobiChord and Data Warehouse — MobiChord is the critical concern with 2 tasks now blocking the vendor sign-off milestone. The project is at <strong>45% completion with a Jul 2025 deadline</strong>, which is at risk if the current pace continues. Data Warehouse remains on track at 62%. A <strong>resource conflict</strong> has been detected: Lena Park is allocated at 120% — her overload is contributing directly to the MobiChord task delays. <strong>3 items need your attention today.</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    <div class="kpi warn" onclick="sendMessage('Tell me about my project completion status')">
+      <div class="kpi-label">Avg Completion</div>
+      <div class="kpi-val">52%</div>
+      <div class="kpi-trend down">↓ 3% vs last week</div>
+      <div class="kpi-sub">3 active projects</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:52%"></div></div>
+    </div>
+    <div class="kpi alert" onclick="sendMessage('Show me all overdue tasks')">
+      <div class="kpi-label">Overdue Tasks</div>
+      <div class="kpi-val">4</div>
+      <div class="kpi-trend down">↑ 2 since last week</div>
+      <div class="kpi-sub">MobiChord · Data WH</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:100%"></div></div>
+    </div>
+    <div class="kpi alert" onclick="sendMessage('Tell me about the resource overallocation issue')">
+      <div class="kpi-label">Over-allocated</div>
+      <div class="kpi-val">2</div>
+      <div class="kpi-trend flat">Lena Park · Rachel King</div>
+      <div class="kpi-sub">Above 100% capacity</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:100%"></div></div>
+    </div>
+    <div class="kpi ai" onclick="sendMessage('What is the risk of MobiChord missing its deadline?')">
+      <div class="kpi-label">AI Risk Score</div>
+      <div class="kpi-val">High</div>
+      <div class="kpi-trend flat" style="color:var(--ai)">MobiChord deadline risk</div>
+      <div class="kpi-sub">Based on pace + overdue tasks</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:78%;background:var(--ai)"></div></div>
+    </div>
+  </div>
+
+  <!-- AI Narrative Band -->
+  <div class="ai-band">
+    <div class="ai-band-hdr">
+      <span class="ai-band-icon">✦</span>
+      <span class="ai-band-label">AI Summary · 4 min ago</span>
+    </div>
+    <div class="ai-band-text">
+      At the current task completion rate, <strong>MobiChord will miss its July 2025 deadline by approximately 6–8 weeks</strong> unless 2 blocked tasks are resolved this week. The root cause is a resource conflict — Lena Park's 120% allocation means her MobiChord tasks are consistently deprioritised. <strong>Redistributing 20% of her allocation from Data Warehouse to MobiChord</strong> could recover 2–3 weeks. Rachel King's overallocation is also creating a bottleneck on the integration requirements task, now 15 days overdue.
+    </div>
+  </div>
+
+  <!-- Two-col: Needs Attention + Automated Activity -->
+  <div class="two-col">
+
+    <!-- INPUT NEEDED -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-icon">⚠️</span>
+        <span class="panel-title">Input Needed</span>
+        <span class="panel-count red">3</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Item 1 -->
+        <div class="insight-item" onclick="toggleDrill('drill-1',this)">
+          <div class="ii-top">
+            <div class="ii-dot red"></div>
+            <div class="ii-content">
+              <div class="ii-title">MobiChord: Vendor sign-off is blocked — 2 prerequisite tasks overdue.</div>
+              <div class="ii-meta">MobiChord Mobility · PRJ0010677 · 15 days overdue</div>
+              <div class="ii-tags">
+                <span class="tag urgent">Urgent</span>
+                <span class="tag warn">Milestone at Risk</span>
+                <span class="tag info">Jul 2025 Deadline</span>
+              </div>
+            </div>
+            <span class="ii-chevron" id="chev-drill-1">›</span>
+          </div>
+          <div class="drill-panel" id="drill-1">
+            <div class="drill-section">
+              <div class="drill-section-title">Blocked Tasks</div>
+              <div class="drill-task-row">
+                <span style="color:var(--red);font-size:13px">●</span>
+                <span class="drill-task-name">Define integration requirements</span>
+                <span class="tag urgent">15 days overdue</span>
+                <span class="drill-task-meta">Rachel King</span>
+              </div>
+              <div class="drill-task-row">
+                <span style="color:var(--red);font-size:13px">●</span>
+                <span class="drill-task-name">Vendor sign-off on architecture</span>
+                <span class="tag urgent">10 days overdue</span>
+                <span class="drill-task-meta">Lena Park</span>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">Impact Analysis</div>
+              <div class="drill-stat-row">
+                <div class="drill-stat"><div class="drill-stat-label">Days Overdue</div><div class="drill-stat-val red">15</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Milestone Risk</div><div class="drill-stat-val amber">UAT Sign-off</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Est. Delay</div><div class="drill-stat-val red">6–8 wks</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="drill-rec">
+                <strong>Immediate action:</strong> Schedule a 30-min unblock session with Rachel King and Lena Park today. Rachel's task can be unblocked if you provide the integration spec draft — the agent has identified a <strong>partially complete version in PRJTASK0010296</strong> that can be accelerated. Consider reassigning Lena's architecture task to Tom Nair (currently at 60% allocation) to resolve the bottleneck.
+              </div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('Draft a message to Rachel King and Lena Park about unblocking the MobiChord tasks')">✉ Draft message to team</button>
+                <button class="drill-btn ghost" onclick="sendMessage('What would happen if I reassign the architecture task to Tom Nair?')">Explore reassignment</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 2 -->
+        <div class="insight-item" onclick="toggleDrill('drill-2',this)">
+          <div class="ii-top">
+            <div class="ii-dot amber"></div>
+            <div class="ii-content">
+              <div class="ii-title">Lena Park is at 120% allocation — directly contributing to task delays.</div>
+              <div class="ii-meta">Resource conflict · MobiChord + Data Warehouse</div>
+              <div class="ii-tags">
+                <span class="tag urgent">Over-allocated</span>
+                <span class="tag warn">Burnout Risk</span>
+              </div>
+            </div>
+            <span class="ii-chevron" id="chev-drill-2">›</span>
+          </div>
+          <div class="drill-panel" id="drill-2">
+            <div class="drill-section">
+              <div class="drill-section-title">Allocation Breakdown</div>
+              <div class="drill-stat-row">
+                <div class="drill-stat"><div class="drill-stat-label">Current Load</div><div class="drill-stat-val red">120%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">MobiChord</div><div class="drill-stat-val amber">70%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Data WH</div><div class="drill-stat-val blue">50%</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="drill-rec">
+                <strong>Reduce Data Warehouse allocation by 20%</strong> (from 50% → 30%) temporarily until MobiChord's blocked tasks clear. Data Warehouse is currently on track at 62% — it can absorb a short-term reduction without missing its June 2025 deadline. This frees Lena to focus on the architecture task blocking MobiChord's vendor sign-off.
+              </div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('What is the impact of reducing Lena Park on Data Warehouse from 50% to 30%?')">Model this change</button>
+                <button class="drill-btn ghost" onclick="sendMessage('Who else can cover Lena Parks Data Warehouse tasks?')">Find alternatives</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item 3 -->
+        <div class="insight-item" onclick="toggleDrill('drill-3',this)">
+          <div class="ii-top">
+            <div class="ii-dot amber"></div>
+            <div class="ii-content">
+              <div class="ii-title">MobiChord stakeholder review deck has not been started — due in 5 days.</div>
+              <div class="ii-meta">MobiChord Mobility · PRJTASK0010301 · Assigned to you</div>
+              <div class="ii-tags">
+                <span class="tag warn">Due Soon</span>
+                <span class="tag info">Assigned to PM</span>
+              </div>
+            </div>
+            <span class="ii-chevron" id="chev-drill-3">›</span>
+          </div>
+          <div class="drill-panel" id="drill-3">
+            <div class="drill-section">
+              <div class="drill-section-title">Task Detail</div>
+              <div class="drill-stat-row">
+                <div class="drill-stat"><div class="drill-stat-label">Due Date</div><div class="drill-stat-val amber">30 Mar 2025</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Progress</div><div class="drill-stat-val red">0%</div></div>
+                <div class="drill-stat"><div class="drill-stat-label">Days Left</div><div class="drill-stat-val amber">5</div></div>
+              </div>
+            </div>
+            <div class="drill-section">
+              <div class="drill-section-title">AI Recommendation</div>
+              <div class="drill-rec">
+                <strong>This task is assigned directly to you.</strong> The agent can generate a draft stakeholder deck outline using current project data — completion %, milestone status, risks, and team workload. This typically takes 15 minutes to review and customise vs 2–3 hours to build from scratch.
+              </div>
+              <div class="drill-actions" style="margin-top:10px">
+                <button class="drill-btn primary" onclick="sendMessage('Generate a stakeholder review deck outline for MobiChord using current project data')">✦ Generate deck outline</button>
+                <button class="drill-btn ghost" onclick="sendMessage('What should be included in the MobiChord stakeholder review?')">What to include</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <span class="show-more" onclick="sendMessage('Show me all issues and risks across all my projects')">Show all issues →</span>
+      </div>
+    </div>
+
+    <!-- AUTOMATED ACTIVITY -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span class="panel-hdr-icon">⚡</span>
+        <span class="panel-title">Automated Activity</span>
+        <span class="panel-count blue">4</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="activity-item">
+          <div class="ai-icon-wrap running">⏳</div>
+          <div class="ai-text">
+            <div class="ai-title">Monitoring MobiChord deadline risk — daily re-assessment running.</div>
+            <div class="ai-meta">MobiChord Mobility · PRJ0010677 · Updated 4 min ago</div>
+            <div class="ai-savings">Risk level: High · Estimated delay if unresolved: 6–8 weeks</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="ai-icon-wrap done">✅</div>
+          <div class="ai-text">
+            <div class="ai-title">Data Warehouse sprint plan reviewed — no blockers detected.</div>
+            <div class="ai-meta">Data Warehouse Rebuild · PRJ0010445 · 1h ago</div>
+            <div class="ai-savings">10 tasks on track · Next milestone: Schema finalisation 2 Apr</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="ai-icon-wrap done">✅</div>
+          <div class="ai-text">
+            <div class="ai-title">Network Upgrade status report auto-generated and saved.</div>
+            <div class="ai-meta">Network Infrastructure · PRJ0011204 · 3h ago</div>
+            <div class="ai-savings">48% complete · On track for Aug 2025</div>
+          </div>
+        </div>
+
+        <div class="activity-item">
+          <div class="ai-icon-wrap info">📊</div>
+          <div class="ai-text">
+            <div class="ai-title">Weekly progress summary sent to stakeholders for all 3 projects.</div>
+            <div class="ai-meta">All projects · Yesterday 9:00 AM</div>
+            <div class="ai-savings">3 projects summarised · 0 escalations triggered</div>
+          </div>
+        </div>
+
+        <span class="show-more" onclick="sendMessage('Show me all automated actions taken this week')">Show full activity log →</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Deep Insights (full width) -->
+  <div class="panel" style="animation:fadeUp .4s .2s ease both;margin-bottom:16px">
+    <div class="panel-hdr">
+      <span class="panel-hdr-icon">✦</span>
+      <span class="panel-title">AI Deep Insights</span>
+      <span class="panel-count ai">5</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="insight-item" onclick="toggleDrill('drill-4',this)">
+        <div class="ii-top">
+          <div class="ii-dot ai"></div>
+          <div class="ii-content">
+            <div class="ii-title">At the current pace, MobiChord will reach only 68% completion by the July 2025 deadline — a shortfall of 32%.</div>
+            <div class="ii-meta">Pace analysis · Based on last 8 weeks of task completion data</div>
+            <div class="ii-tags"><span class="tag ai">Predictive</span><span class="tag urgent">Deadline Risk</span></div>
+          </div>
+          <span class="ii-chevron" id="chev-drill-4">›</span>
+        </div>
+        <div class="drill-panel" id="drill-4">
+          <div class="drill-section">
+            <div class="drill-section-title">Completion Forecast</div>
+            <div class="drill-stat-row">
+              <div class="drill-stat"><div class="drill-stat-label">Current</div><div class="drill-stat-val amber">45%</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Forecast at Deadline</div><div class="drill-stat-val red">68%</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Tasks/week needed</div><div class="drill-stat-val blue">4.2</div></div>
+            </div>
+          </div>
+          <div class="drill-section">
+            <div class="drill-section-title">AI Recommendation</div>
+            <div class="drill-rec"><strong>To meet the July deadline</strong>, the team needs to close 4.2 tasks per week vs the current average of 2.8. Resolving the 2 blocked tasks this week would immediately improve velocity. Consider a brief daily standup for the next 3 weeks to keep momentum.</div>
+            <div class="drill-actions" style="margin-top:10px">
+              <button class="drill-btn primary" onclick="sendMessage('What does the MobiChord completion forecast look like if we resolve the blocked tasks this week?')">Run updated forecast</button>
+              <button class="drill-btn ghost" onclick="sendMessage('Draft a recovery plan for MobiChord')">Draft recovery plan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-item" onclick="toggleDrill('drill-5',this)">
+        <div class="ii-top">
+          <div class="ii-dot ai"></div>
+          <div class="ii-content">
+            <div class="ii-title">Tom Nair has 40% available capacity and relevant skills — he could absorb 1–2 MobiChord tasks without impacting Data Warehouse.</div>
+            <div class="ii-meta">Resource optimisation · Skill match: Architecture, Development</div>
+            <div class="ii-tags"><span class="tag ai">Optimisation</span><span class="tag ok">Available Now</span></div>
+          </div>
+          <span class="ii-chevron" id="chev-drill-5">›</span>
+        </div>
+        <div class="drill-panel" id="drill-5">
+          <div class="drill-section">
+            <div class="drill-section-title">Tom Nair Availability</div>
+            <div class="drill-stat-row">
+              <div class="drill-stat"><div class="drill-stat-label">Current Load</div><div class="drill-stat-val green">60%</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Available</div><div class="drill-stat-val green">40%</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Skill Match</div><div class="drill-stat-val blue">High</div></div>
+            </div>
+          </div>
+          <div class="drill-section">
+            <div class="drill-section-title">Suggested Task Reassignments</div>
+            <div class="drill-task-row">
+              <span style="color:var(--ai);font-size:13px">→</span>
+              <span class="drill-task-name">Vendor sign-off on architecture (from Lena Park)</span>
+              <span class="tag ok">Good fit</span>
+            </div>
+          </div>
+          <div class="drill-section">
+            <div class="drill-section-title">AI Recommendation</div>
+            <div class="drill-rec"><strong>Reassigning the architecture task to Tom Nair</strong> would immediately unblock MobiChord's vendor sign-off milestone, reduce Lena Park from 120% to 90% allocation, and costs nothing in additional resource budget.</div>
+            <div class="drill-actions" style="margin-top:10px">
+              <button class="drill-btn primary" onclick="sendMessage('What is the full impact of reassigning the architecture task from Lena Park to Tom Nair?')">Model reassignment</button>
+              <button class="drill-btn ghost" onclick="sendMessage('Draft a task reassignment note for Tom Nair')">Draft reassignment note</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-item" onclick="toggleDrill('drill-6',this)">
+        <div class="ii-top">
+          <div class="ii-dot blue"></div>
+          <div class="ii-content">
+            <div class="ii-title">Data Warehouse Rebuild is on track — but the schema finalisation task (Apr 2) has no buffer if delayed.</div>
+            <div class="ii-meta">Data Warehouse Rebuild · PRJ0010445 · Next milestone in 8 days</div>
+            <div class="ii-tags"><span class="tag info">Watch</span><span class="tag warn">No Buffer</span></div>
+          </div>
+          <span class="ii-chevron" id="chev-drill-6">›</span>
+        </div>
+        <div class="drill-panel" id="drill-6">
+          <div class="drill-section">
+            <div class="drill-section-title">Milestone Detail</div>
+            <div class="drill-stat-row">
+              <div class="drill-stat"><div class="drill-stat-label">Milestone</div><div class="drill-stat-val blue" style="font-size:13px">Schema Finalisation</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Due Date</div><div class="drill-stat-val blue">02 Apr</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Float (days)</div><div class="drill-stat-val amber">0</div></div>
+            </div>
+          </div>
+          <div class="drill-section">
+            <div class="drill-section-title">AI Recommendation</div>
+            <div class="drill-rec"><strong>No action needed today</strong>, but flag this for daily monitoring. If the schema task slips by even 1 day, it cascades to the data migration task and risks the June 2025 overall deadline. The agent is actively monitoring this.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-item" onclick="toggleDrill('drill-7',this)">
+        <div class="ii-top">
+          <div class="ii-dot ai"></div>
+          <div class="ii-content">
+            <div class="ii-title">Network Infrastructure is running 2 weeks ahead of schedule — consider pulling forward Sprint 4 tasks.</div>
+            <div class="ii-meta">Network Infrastructure · PRJ0011204 · 48% complete vs 44% planned</div>
+            <div class="ii-tags"><span class="tag ok">Ahead of Schedule</span><span class="tag ai">Opportunity</span></div>
+          </div>
+          <span class="ii-chevron" id="chev-drill-7">›</span>
+        </div>
+        <div class="drill-panel" id="drill-7">
+          <div class="drill-section">
+            <div class="drill-section-title">Schedule Analysis</div>
+            <div class="drill-stat-row">
+              <div class="drill-stat"><div class="drill-stat-label">Planned Progress</div><div class="drill-stat-val blue">44%</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Actual Progress</div><div class="drill-stat-val green">48%</div></div>
+              <div class="drill-stat"><div class="drill-stat-label">Buffer Gained</div><div class="drill-stat-val green">~2 wks</div></div>
+            </div>
+          </div>
+          <div class="drill-section">
+            <div class="drill-section-title">AI Recommendation</div>
+            <div class="drill-rec"><strong>Pull forward Sprint 4 performance testing tasks</strong> to take advantage of the 2-week buffer. This would protect the August deadline even if disruptions occur, and could allow an early delivery which saves infrastructure cost.</div>
+            <div class="drill-actions" style="margin-top:10px">
+              <button class="drill-btn primary" onclick="sendMessage('What Sprint 4 tasks can we pull forward for Network Infrastructure?')">Show Sprint 4 tasks</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-item" onclick="toggleDrill('drill-8',this)">
+        <div class="ii-top">
+          <div class="ii-dot ai"></div>
+          <div class="ii-content">
+            <div class="ii-title">3 team members have completed all their current tasks and have capacity for new assignments.</div>
+            <div class="ii-meta">Team capacity · Sofia Chen · Priya Reddy · James Daly</div>
+            <div class="ii-tags"><span class="tag ok">Capacity Available</span><span class="tag ai">Rebalancing Opportunity</span></div>
+          </div>
+          <span class="ii-chevron" id="chev-drill-8">›</span>
+        </div>
+        <div class="drill-panel" id="drill-8">
+          <div class="drill-section">
+            <div class="drill-section-title">Available Team Members</div>
+            <div class="drill-task-row"><span style="color:var(--green);font-size:13px">●</span><span class="drill-task-name">Sofia Chen (QA Engineer)</span><span class="tag ok">80% — can take more</span></div>
+            <div class="drill-task-row"><span style="color:var(--blue);font-size:13px">●</span><span class="drill-task-name">Priya Reddy (Designer)</span><span class="tag info">30% — significantly under-utilised</span></div>
+            <div class="drill-task-row"><span style="color:var(--blue);font-size:13px">●</span><span class="drill-task-name">James Daly (Architect)</span><span class="tag info">40% — available for MobiChord work</span></div>
+          </div>
+          <div class="drill-section">
+            <div class="drill-section-title">AI Recommendation</div>
+            <div class="drill-rec"><strong>James Daly's architecture background</strong> makes him a strong candidate for MobiChord architecture tasks. Priya Reddy could take on the stakeholder review deck design — her design skills are underutilised across all projects.</div>
+            <div class="drill-actions" style="margin-top:10px">
+              <button class="drill-btn primary" onclick="sendMessage('Suggest task assignments for James Daly and Priya Reddy based on current project needs')">Suggest assignments</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── CHAT BAR (fixed bottom) ── -->
+<div class="chat-fixed">
+  <div class="chat-inner">
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-suggestions" id="chat-suggestions">
+      <button class="chat-sug" onclick="sendMessage('What should I prioritise today?')">What should I do first today?</button>
+      <button class="chat-sug" onclick="sendMessage('Draft a status update for all 3 projects')">Draft a status update</button>
+      <button class="chat-sug" onclick="sendMessage('Will MobiChord miss its deadline?')">Will MobiChord miss its deadline?</button>
+      <button class="chat-sug" onclick="sendMessage('Who is most at risk of burnout on my team?')">Burnout risk on my team?</button>
+    </div>
+    <div class="chat-input-row">
+      <button class="chat-plus" title="Attach">+</button>
+      <div class="chat-input-wrap">
+        <input class="chat-input" id="chat-input" type="text" placeholder="Ask PM Agent anything about your projects…" onkeydown="if(event.key==='Enter')sendFromInput()"/>
+        <button class="chat-mic" title="Voice input">🎤</button>
+      </div>
+      <button class="chat-send" id="chat-send" onclick="sendFromInput()">↑</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DRILL DOWN TOGGLE ──
+function toggleDrill(id, row) {
+  const panel  = document.getElementById(id);
+  const chevId = 'chev-' + id;
+  const chev   = document.getElementById(chevId);
+  const isOpen = panel.classList.contains('open');
+
+  // Close all others
+  document.querySelectorAll('.drill-panel.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.ii-chevron.open').forEach(c => c.classList.remove('open'));
+  document.querySelectorAll('.insight-item.expanded').forEach(r => r.classList.remove('expanded'));
+
+  if (!isOpen) {
+    panel.classList.add('open');
+    if (chev) chev.classList.add('open');
+    row.classList.add('expanded');
+  }
+}
+
+// ── CHAT ──
+const responses = {
+  'prioritise': `Based on your current project state, here's your priority order for today:\n\n**1. Unblock MobiChord tasks** — Schedule a 30-min call with Rachel King and Lena Park. The integration requirements task is 15 days overdue and blocking everything downstream.\n\n**2. Review Lena Park's allocation** — She's at 120%. Consider shifting her Data Warehouse work to James Daly temporarily.\n\n**3. Start the stakeholder review deck** — Due in 5 days, 0% complete, assigned to you. The agent can generate an outline now if you'd like.`,
+  'overdue': `You have **4 overdue tasks** across 2 projects:\n\n🔴 **MobiChord Mobility (PRJ0010677)**\n- Define integration requirements — 15 days overdue (Rachel King)\n- Vendor sign-off on architecture — 10 days overdue (Lena Park)\n- Stakeholder review deck — 5 days overdue (Arjun Kumar)\n\n🔴 **Data Warehouse (PRJ0010445)**\n- Data schema finalisation — 7 days overdue (Tom Nair)\n\nThe MobiChord tasks are the most critical as they're blocking the vendor sign-off milestone.`,
+  'resource': `**Resource overallocation details:**\n\n🔴 **Lena Park — 120%** (Tech Lead)\n- MobiChord: 70% | Data Warehouse: 50%\n- Impact: Directly causing 2 task delays on MobiChord\n- Fix: Reduce Data Warehouse to 30% temporarily\n\n🔴 **Rachel King — 110%** (Analyst)\n- MobiChord: 60% | Network Upgrade: 50%\n- Impact: Contributing to the integration requirements delay\n- Fix: Defer Network Upgrade tasks by 2 weeks\n\nCombined, these overallocations are the primary driver of MobiChord's 6–8 week projected delay.`,
+  'deadline': `**MobiChord Deadline Risk Analysis:**\n\nCurrent completion: 45% | Deadline: 03 July 2025\nWeeks remaining: ~14 | Tasks remaining: 12 open + 4 overdue\n\nAt the current pace of **2.8 tasks/week**, the project will reach approximately 68% by the deadline — a 32% shortfall.\n\nTo meet the deadline, the team needs **4.2 tasks/week**. This is achievable if:\n1. The 2 blocked tasks are resolved this week (+velocity)\n2. Lena Park's allocation is rebalanced\n3. Tom Nair picks up 1 additional task\n\nWith those changes, the model forecasts **96% completion by July 3rd**.`,
+  'status': `Here's a draft status update for your 3 projects:\n\n---\n**Weekly Project Status — Week of 25 March 2025**\n\n📋 **MobiChord Mobility (PRJ0010677)** — ⚠️ At Risk\n45% complete. 4 overdue tasks require immediate attention. Vendor sign-off milestone at risk due to blocked prerequisite tasks. Recovery plan in progress.\n\n📋 **Data Warehouse Rebuild (PRJ0010445)** — ✅ On Track\n62% complete. Schema finalisation milestone due 2 April is on track. No blockers detected.\n\n📋 **Network Infrastructure (PRJ0011204)** — ✅ Ahead of Schedule\n48% complete vs 44% planned. 2 weeks ahead of schedule. Sprint 4 tasks may be pulled forward.\n\n---\nWould you like me to send this to your stakeholders?`,
+  'burnout': `**Burnout Risk Assessment:**\n\n🔴 **High Risk:** Lena Park (120% allocation)\n- Overallocated for the past 3 weeks\n- 7 open tasks, 2 overdue\n- Recommendation: Immediate rebalancing needed\n\n🟡 **Medium Risk:** Rachel King (110% allocation)\n- Overallocated for 2 weeks\n- 5 open tasks, 1 overdue\n\n✅ **Low Risk:** Tom Nair, Arjun Kumar, Sofia Chen — all within healthy range\n\n🔵 **Under-utilised:** Priya Reddy (30%), James Daly (40%) — capacity available to absorb work from at-risk resources.`,
+  'default': `I've analysed your project data and have some insights on that. Based on the current state of your 3 projects, the most critical item is the MobiChord task blockage — resolving that should be your first priority today. Would you like me to drill into a specific aspect, draft a communication, or model a scenario?`
+};
+
+function getResponse(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('priorit') || m.includes('first') || m.includes('today')) return responses.prioritise;
+  if (m.includes('overdue') || m.includes('blocked')) return responses.overdue;
+  if (m.includes('resource') || m.includes('alloc') || m.includes('lena') || m.includes('overalloc')) return responses.resource;
+  if (m.includes('deadline') || m.includes('miss') || m.includes('forecast') || m.includes('completion')) return responses.deadline;
+  if (m.includes('status') || m.includes('update') || m.includes('summary')) return responses.status;
+  if (m.includes('burnout') || m.includes('risk') && m.includes('team')) return responses.burnout;
+  if (m.includes('tom nair') || m.includes('reassign') || m.includes('lena')) return responses.resource;
+  if (m.includes('sprint') || m.includes('network')) return `**Network Infrastructure Sprint Analysis:**\n\nCurrently 48% complete (2 weeks ahead). Sprint 4 tasks that could be pulled forward:\n\n- Performance baseline testing (planned May 1 → can start Apr 14)\n- Security hardening review (planned May 8 → can start Apr 21)\n- Load testing phase 1 (planned May 15 → can start Apr 28)\n\nPulling these forward would create a 3-week buffer before the August deadline.`;
+  if (m.includes('deck') || m.includes('stakeholder') || m.includes('presentation')) return `**Stakeholder Review Deck Outline — MobiChord Mobility:**\n\n1. **Executive Summary** — 45% complete, at risk, key decisions needed\n2. **Progress vs Plan** — Task completion chart, milestone status\n3. **Key Risks** — 4 overdue tasks, resource conflict, vendor sign-off delay\n4. **Actions Required** — 2 team reassignments, 1 unblock session needed\n5. **Next Milestones** — UAT Sign-off (Apr 28), Go-Live prep (Jun 15)\n6. **Ask from Stakeholders** — Approval to adjust Lena Park's allocation\n\nShall I flesh this out into a full slide-by-slide narrative?`;
+  return responses.default;
+}
+
+function addMessage(text, role) {
+  const msgs = document.getElementById('chat-messages');
+  const initials = role === 'user' ? 'AK' : '✦';
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  // Convert **bold** and newlines for display
+  const formatted = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br/>');
+  div.innerHTML = `
+    <div class="chat-av ${role}">${initials}</div>
+    <div class="chat-bubble">${formatted}</div>`;
+  msgs.appendChild(div);
+  msgs.style.display = 'flex';
+  msgs.scrollTop = msgs.scrollHeight;
+  // Hide suggestions after first message
+  document.getElementById('chat-suggestions').style.display = 'none';
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg agent';
+  div.id = 'typing-indicator';
+  div.innerHTML = `<div class="chat-av agent">✦</div><div class="chat-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function sendMessage(text) {
+  addMessage(text, 'user');
+  const input = document.getElementById('chat-input');
+  if (input) input.value = '';
+  addTyping();
+  setTimeout(() => {
+    removeTyping();
+    addMessage(getResponse(text), 'agent');
+  }, 900 + Math.random() * 600);
+}
+
+function sendFromInput() {
+  const input = document.getElementById('chat-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  sendMessage(text);
+}
+</script>
+</body>
+</html>

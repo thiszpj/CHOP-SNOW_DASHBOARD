@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ServiceNow PM Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:     #0078D4;
+  --blue-d:   #005A9E;
+  --blue-l:   #C7E0F4;
+  --blue-xl:  #EFF6FC;
+  --navy:     #003B73;
+  --green:    #107C10;
+  --text:     #201F1E;
+  --text2:    #605E5C;
+  --muted:    #A19F9D;
+  --border:   #EDEBE9;
+  --border-d: #C8C6C4;
+  --surface:  #FFFFFF;
+  --font:     'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: linear-gradient(135deg, #003B73 0%, #005A9E 50%, #0078D4 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .4; }
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 48px 44px 40px;
+  width: 520px;
+  max-width: 94vw;
+  box-shadow: 0 24px 60px rgba(0,0,0,.3);
+  animation: fadeUp .5s ease both;
+  text-align: center;
+}
+
+/* ── LOGO ── */
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.logo-ms svg { width: 28px; height: 28px; }
+.logo-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border-d);
+}
+.logo-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.3px;
+}
+
+/* ── HEADING ── */
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -.3px;
+}
+.subtitle {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+
+/* ── SYNC INDICATOR ── */
+.sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+.sync-text {
+  font-size: 12px;
+  color: var(--text2);
+}
+.sync-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+/* ── ROLE GRID ── */
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.role-card {
+  border: 2px solid var(--border-d);
+  border-radius: 12px;
+  padding: 24px 16px 20px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s, transform .2s, box-shadow .2s;
+  background: var(--surface);
+  text-decoration: none;
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+.role-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.role-card.exec::before  { background: var(--blue); }
+.role-card.pm::before    { background: #107C10; }
+
+.role-card:hover {
+  border-color: var(--blue);
+  background: var(--blue-xl);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,120,212,.18);
+}
+.role-card.exec:hover { border-color: var(--blue); }
+.role-card.pm:hover   { border-color: #107C10; background: #F0FBF0; box-shadow: 0 6px 20px rgba(16,124,16,.15); }
+
+.role-card:hover::before { opacity: 1; }
+
+.rc-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  display: block;
+}
+.rc-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.rc-desc {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.rc-arrow {
+  position: absolute;
+  bottom: 14px;
+  right: 16px;
+  font-size: 18px;
+  color: var(--border-d);
+  transition: color .2s, transform .2s;
+}
+.role-card:hover .rc-arrow {
+  color: var(--blue);
+  transform: translateX(3px);
+}
+.role-card.pm:hover .rc-arrow { color: #107C10; }
+
+/* ── BADGE ── */
+.rc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.rc-badge.blue   { background: var(--blue-xl); color: var(--blue-d); }
+.rc-badge.green  { background: #DFF6DD; color: #004B1C; }
+.rc-badge.red    { background: #FDE7E9; color: #6E0811; }
+
+/* ── INFO BANNER ── */
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--blue-xl);
+  border: 1px solid var(--blue-l);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--blue-d);
+  text-align: left;
+  line-height: 1.5;
+}
+.info-banner .ib-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── FOOTER ── */
+.footer {
+  margin-top: 24px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.footer a {
+  color: var(--blue);
+  text-decoration: none;
+}
+.footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-ms">
+      <svg viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1"  y="1"  width="10" height="10" fill="#F25022"/>
+        <rect x="12" y="1"  width="10" height="10" fill="#7FBA00"/>
+        <rect x="1"  y="12" width="10" height="10" fill="#00A4EF"/>
+        <rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
+      </svg>
+    </div>
+    <div class="logo-divider"></div>
+    <div class="logo-text">ServiceNow PM Dashboard</div>
+  </div>
+
+  <!-- Heading -->
+  <div class="title">Select your role</div>
+  <div class="subtitle">
+    Choose your dashboard view. In production this selection is<br/>
+    handled automatically by <strong>Azure Entra ID</strong>.
+  </div>
+
+  <!-- Live sync indicator -->
+  <div class="sync-row">
+    <div class="sync-dot"></div>
+    <span class="sync-text">ServiceNow data last synced</span>
+    <span class="sync-time">3 minutes ago</span>
+  </div>
+
+  <!-- Role cards -->
+  <div class="role-grid">
+
+    <a class="role-card exec" href="executive-dashboard.html">
+      <span class="rc-icon">👔</span>
+      <div class="rc-title">Executive</div>
+      <div class="rc-desc">Portfolio overview, RAG status, all projects &amp; completion trends</div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
+        <span class="rc-badge blue">24 projects</span>
+        <span class="rc-badge red">5 at risk</span>
+      </div>
+      <div class="rc-arrow">›</div>
+    </a>
+
+    <a class="role-card pm" href="pm-manager-dashboard.html">
+      <span class="rc-icon">📋</span>
+      <div class="rc-title">Project Manager</div>
+      <div class="rc-desc">My projects, tasks, overdue items &amp; resource allocation</div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
+        <span class="rc-badge green">3 projects</span>
+        <span class="rc-badge red">4 overdue</span>
+      </div>
+      <div class="rc-arrow">›</div>
+    </a>
+
+  </div>
+
+  <!-- Info banner -->
+  <div class="info-banner">
+    <span class="ib-icon">🔒</span>
+    <div>
+      This is a <strong>POC mockup</strong>. In production, Azure Entra ID App Roles 
+      (<code>Dashboard.Executive</code>, <code>Dashboard.PM</code>) enforce access 
+      automatically — users land directly on their view without this selector.
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" style="margin-top:20px">
+    Connected to <strong>ServiceNow Zurich</strong> · Azure Data Factory sync every 5 min
+  </div>
+
+</div>
+
+</body>
+</html>

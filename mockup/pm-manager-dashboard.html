@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Project Manager Dashboard — ServiceNow PM</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&family=Cascadia+Code:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#0078D4;--blue-d:#005A9E;--blue-l:#C7E0F4;--blue-xl:#EFF6FC;
+  --navy:#003B73;--teal:#008575;
+  --bg:#F3F2F1;--surface:#FFF;--surface2:#FAF9F8;
+  --border:#EDEBE9;--border-d:#C8C6C4;
+  --text:#201F1E;--text2:#605E5C;--muted:#A19F9D;
+  --green:#107C10;--green-bg:#DFF6DD;
+  --amber:#D83B01;--amber-bg:#FDEDE3;
+  --red:#A4262C;--red-bg:#FDE7E9;
+  --warn-bg:#FFF4CE;
+  --sw:220px;--th:48px;
+  --r:4px;--rl:8px;
+  --sh:0 1.6px 3.6px rgba(0,0,0,.13),0 .3px .9px rgba(0,0,0,.1);
+  --sh2:0 4.8px 14.4px rgba(0,0,0,.18),0 .9px 2.7px rgba(0,0,0,.1);
+  --font:'Segoe UI',system-ui,sans-serif;
+  --mono:'Cascadia Code','Consolas',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;overflow-x:hidden}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideRight{from{width:0}to{width:var(--w)}}
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes barGrow{from{height:0;y:196px}to{height:var(--h);y:var(--y)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+.fade-up{animation:fadeUp .4s ease both}
+.fade-up-1{animation:fadeUp .4s .05s ease both}
+.fade-up-2{animation:fadeUp .4s .1s ease both}
+.fade-up-3{animation:fadeUp .4s .15s ease both}
+.fade-up-4{animation:fadeUp .4s .2s ease both}
+.fade-up-5{animation:fadeUp .4s .25s ease both}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+#login.active{align-items:center;justify-content:center;background:linear-gradient(135deg,#003B73,#005A9E 50%,#0078D4)}
+
+/* ── LOGIN ── */
+.login-card{background:var(--surface);border-radius:var(--rl);padding:48px 40px 40px;width:400px;box-shadow:var(--sh2);animation:fadeUp .5s ease}
+.ms-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px}
+.ms-logo svg{width:24px;height:24px}
+.ms-logo span{font-size:18px;font-weight:600}
+.login-title{font-size:24px;font-weight:600;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.lf{margin-bottom:16px}
+.lf label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+.lf input,.lf select{width:100%;border:1px solid var(--border-d);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:14px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s}
+.lf input:focus,.lf select:focus{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.divider{text-align:center;font-size:12px;color:var(--muted);margin:20px 0 16px;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:var(--border)}
+.divider::before{left:0}.divider::after{right:0}
+.role-pills{display:flex;gap:8px}
+.rp{flex:1;border:1.5px solid var(--border-d);border-radius:var(--r);padding:10px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .15s;background:var(--surface)}
+.rp:hover,.rp.sel{border-color:var(--blue);color:var(--blue);background:var(--blue-xl)}
+.rp .ri{font-size:20px;display:block;margin-bottom:4px}
+.btn-main{width:100%;background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:10px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:20px;transition:background .15s,transform .1s}
+.btn-main:hover{background:var(--blue-d)}
+.btn-main:active{transform:scale(.99)}
+
+/* ── SHELL ── */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .25s}
+.sb-hd{padding:0 16px;height:var(--th);display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-icon{width:28px;height:28px;background:var(--blue);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-icon svg{width:16px;height:16px;fill:white}
+.sb-name{font-size:14px;font-weight:600;color:white}
+.sb-nav{flex:1;padding:8px 0;overflow-y:auto}
+.sg{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 16px;color:rgba(255,255,255,.75);cursor:pointer;font-size:13px;transition:all .15s;border-left:3px solid transparent}
+.ni:hover{background:rgba(255,255,255,.08);color:white}
+.ni.active{background:rgba(0,120,212,.3);color:white;border-left-color:var(--blue);font-weight:600}
+.ni .ico{font-size:16px;flex-shrink:0;opacity:.85}
+.ni .nb{margin-left:auto;background:var(--red);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.ni .nb.bl{background:var(--blue)}
+.sb-user{padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+.uav{width:30px;height:30px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0}
+.un{font-size:12px;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ur{font-size:11px;color:rgba(255,255,255,.5)}
+.so{color:rgba(255,255,255,.4);cursor:pointer;font-size:14px;transition:color .15s;margin-left:auto}
+.so:hover{color:white}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:var(--th);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.tbc{display:flex;align-items:center;gap:6px;flex:1}
+.tbc span{font-size:13px;color:var(--text2)}
+.tbc .ca{font-size:14px;font-weight:600;color:var(--text)}
+.tbc .cs{color:var(--muted);font-size:12px}
+.tr{display:flex;align-items:center;gap:8px}
+.sync-b{display:flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid #A7D7A7;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--green)}
+.sd{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.bti{width:32px;height:32px;border:1px solid var(--border-d);border-radius:var(--r);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text2);transition:all .15s}
+.bti:hover{background:var(--blue-xl);border-color:var(--blue);color:var(--blue)}
+.msbtn{display:flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--blue);border-radius:var(--r);background:var(--blue);color:white;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .15s}
+.msbtn:hover{background:var(--blue-d)}
+.msbtn.ghost{background:var(--surface);color:var(--blue)}
+.msbtn.ghost:hover{background:var(--blue-xl)}
+
+/* ── PAGE ── */
+.pc{flex:1;padding:24px;overflow-y:auto}
+.ph{margin-bottom:20px}
+.pt{font-size:20px;font-weight:600}
+.ps{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* ── FILTER BAR ── */
+.fb{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;box-shadow:var(--sh)}
+.fl{font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap}
+.fs{width:1px;height:20px;background:var(--border)}
+.fsel{border:1px solid var(--border-d);border-radius:var(--r);padding:5px 28px 5px 8px;font-family:var(--font);font-size:12px;color:var(--text);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23605E5C'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;cursor:pointer;outline:none;min-width:120px;transition:border-color .15s}
+.fsel:focus{border-color:var(--blue)}
+.sw{position:relative}
+.sw input{border:1px solid var(--border-d);border-radius:var(--r);padding:5px 8px 5px 28px;font-family:var(--font);font-size:12px;color:var(--text);width:190px;outline:none;transition:border-color .15s}
+.sw input:focus{border-color:var(--blue)}
+.sw::before{content:'🔍';position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11px;pointer-events:none}
+.ft{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;padding:5px 8px;border:1px solid var(--border-d);border-radius:var(--r);background:var(--surface);transition:all .15s}
+.ft:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-xl)}
+.ft.on{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+
+/* ── KPI ── */
+.kg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;box-shadow:var(--sh);position:relative;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .2s}
+.kc:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kc.bl::before{background:var(--blue)}.kc.gr::before{background:var(--green)}.kc.am::before{background:var(--amber)}.kc.rd::before{background:var(--red)}
+.kl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.kv{font-size:32px;font-weight:700;line-height:1;margin-bottom:6px;animation:countUp .5s ease both}
+.kc.bl .kv{color:var(--blue)}.kc.gr .kv{color:var(--green)}.kc.am .kv{color:var(--amber)}.kc.rd .kv{color:var(--red)}
+.ks{font-size:11px;color:var(--muted)}
+.ki{position:absolute;right:16px;top:16px;font-size:24px;opacity:.1}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden;transition:box-shadow .2s}
+.card:hover{box-shadow:var(--sh2)}
+.ch{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.ct{font-size:14px;font-weight:600;flex:1}
+.csub{font-size:11px;color:var(--muted)}
+.cb{padding:16px}
+.cb0{padding:0}
+.cg{display:grid;gap:16px}
+.cg2{grid-template-columns:1fr 1fr}
+.cg31{grid-template-columns:2fr 1fr}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap}
+.bgr{background:var(--green-bg);color:var(--green)}
+.bam{background:var(--amber-bg);color:var(--amber)}
+.brd{background:var(--red-bg);color:var(--red)}
+.bbl{background:var(--blue-l);color:var(--blue-d)}
+.bgy{background:#EDEBE9;color:var(--text2)}
+.btl{background:#D3F3EE;color:var(--teal)}
+.rag{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.rg{background:var(--green)}.ra{background:var(--amber)}.rr{background:var(--red)}
+
+/* ── PROGRESS ── */
+.pb{width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.pf{height:100%;border-radius:3px;animation:slideRight .8s ease both;animation-fill-mode:both}
+.pg{background:var(--green)}.pam{background:var(--amber)}.prd{background:var(--red)}.pbl{background:var(--blue)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--surface2);font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border-d);white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.cl{cursor:pointer}
+.tbl tr.cl:hover td{background:var(--blue-xl)}
+.mav{width:26px;height:26px;border-radius:50%;background:var(--blue);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);white-space:nowrap}
+
+/* ── ALERT ── */
+.al{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--r);margin-bottom:16px;font-size:13px}
+.al.aw{background:var(--warn-bg);border:1px solid #F0D980;color:#4A3800}
+.al.ar{background:var(--red-bg);border:1px solid #F3BCBE;color:#6E0811}
+.al.ai{background:var(--blue-xl);border:1px solid var(--blue-l);color:var(--blue-d)}
+.alico{font-size:16px;flex-shrink:0}
+
+/* ── TASK ROW ── */
+.tr2{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+.tr2:hover{background:var(--blue-xl)}
+.tr2:last-child{border-bottom:none}
+.tr2.ov{background:#FFF4F4}
+.tr2.ov:hover{background:#FDECEA}
+.tc{width:16px;height:16px;border:1.5px solid var(--border-d);border-radius:2px;flex-shrink:0}
+.ti{flex:1;min-width:0}
+.tn2{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* ── MILESTONE ── */
+.ml{display:flex;flex-direction:column}
+.mi{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.mi:last-child{border-bottom:none}
+.md{width:10px;height:10px;border-radius:50%;border:2px solid;flex-shrink:0;margin-top:4px}
+.md.g{border-color:var(--green);background:var(--green-bg)}.md.a{border-color:var(--amber);background:var(--amber-bg)}.md.r{border-color:var(--red);background:var(--red-bg)}
+.mn{font-size:13px;font-weight:500}
+.mm{font-size:11px;color:var(--muted);margin-top:1px}
+.mdate{font-size:11px;font-weight:600;color:var(--text2);white-space:nowrap}
+
+/* ── DONUT ── */
+.dw{display:flex;align-items:center;gap:20px;padding:8px 0}
+.dl{flex:1}
+.dli{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px}
+.dld{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dls{color:var(--text2);flex:1}
+.dlv{font-weight:700}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab:hover{color:var(--blue)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+
+/* ── BACK BTN ── */
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--blue);cursor:pointer;padding:4px 0;margin-bottom:16px;border:none;background:none;font-family:var(--font);transition:opacity .15s}
+.back:hover{opacity:.7;text-decoration:underline}
+
+/* ── DETAIL HDR ── */
+.dhdr{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;box-shadow:var(--sh);animation:fadeUp .3s ease}
+.dtop{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
+.dnum{font-size:12px;font-family:var(--mono);color:var(--muted);margin-bottom:4px}
+.dname{font-size:22px;font-weight:700;margin-bottom:8px}
+.dmr{display:flex;gap:20px;flex-wrap:wrap}
+.dmi{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.dmi strong{color:var(--text)}
+.dstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.dst{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px}
+.dsl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.dsv{font-size:18px;font-weight:700}
+
+/* ── PROJECT ROW ── */
+.pr2{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.pr2:hover{background:var(--blue-xl)}
+.pr2:last-child{border-bottom:none}
+
+/* ── CHART CONTAINER ── */
+.chart-wrap{position:relative;width:100%}
+.chart-wrap svg{width:100%;height:auto;overflow:visible}
+
+/* ── DRILL-DOWN MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:none;align-items:center;justify-content:center;animation:fadeIn .2s ease}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--rl);width:640px;max-width:90vw;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(0,0,0,.25);animation:fadeUp .25s ease}
+.mhdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.mtitle{font-size:16px;font-weight:600;flex:1}
+.mclose{width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:18px;color:var(--text2);display:flex;align-items:center;justify-content:center;border-radius:var(--r);transition:background .15s}
+.mclose:hover{background:var(--red-bg);color:var(--red)}
+.mbody{padding:20px;overflow-y:auto;flex:1}
+.mfooter{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+/* ── CHART TOOLTIP ── */
+.chart-tooltip{position:absolute;background:#201F1E;color:white;font-size:11px;padding:6px 10px;border-radius:4px;pointer-events:none;white-space:nowrap;z-index:300;opacity:0;transition:opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.chart-tooltip.show{opacity:1}
+
+/* ── BAR HOVER ── */
+.bar-interactive{cursor:pointer;transition:opacity .15s,filter .15s}
+.bar-interactive:hover{opacity:.85;filter:brightness(1.05)}
+
+/* ── LEGEND ── */
+.leg{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.lgi{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+.lgd{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+@media(max-width:1100px){
+  .kg{grid-template-columns:repeat(2,1fr)}
+  .cg2,.cg31{grid-template-columns:1fr}
+  .dstats{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ PM DASHBOARD ══ -->
+<div id="pm" class="screen active">
+  <div class="shell">
+    <nav class="sidebar">
+      <div class="sb-hd">
+        <div class="sb-icon"><svg viewBox="0 0 16 16"><path d="M2 2h5v5H2zm7 0h5v5H9zM2 9h5v5H2zm7 0h5v5H9z"/></svg></div>
+        <span class="sb-name">PM Dashboard</span>
+      </div>
+      <div class="sb-nav">
+        <div class="sg">My Work</div>
+        <div class="ni active"><span class="ico">🏠</span>My Overview</div>
+        <div class="ni"><span class="ico">📁</span>My Projects<span class="nb bl">3</span></div>
+        <div class="ni"><span class="ico">✅</span>My Tasks<span class="nb">4</span></div>
+        <div class="ni"><span class="ico">📅</span>Milestones</div>
+        <div class="sg">Resources</div>
+        <div class="ni" onclick="window.location.href='resource-allocation.html'"><span class="ico">👥</span>Resource Allocation<span class="nb" style="background:#D83B01">2</span></div>
+        <div class="ni" onclick="window.location.href='ai-insights.html'"><span class="ico">✦</span>AI Insights<span class="nb" style="background:#6B47DC">3</span></div>
+        <div class="sg">Reports</div>
+        <div class="ni"><span class="ico">📈</span>Project Status</div>
+        <div class="ni"><span class="ico">💰</span>Budget Overview</div>
+        <div class="sg">Settings</div>
+        <div class="ni"><span class="ico">🔄</span>Sync Status</div>
+      </div>
+      <div class="sb-user">
+        <div class="uav" style="background:#7B4F12">AK</div>
+        <div style="flex:1;min-width:0"><div class="un">Arjun Kumar</div><div class="ur">Project Manager</div></div>
+        <div class="so" onclick="signOut()">⎋</div>
+      </div>
+    </nav>
+    <div class="main">
+      <div class="topbar">
+        <div class="tbc"><span class="ca">My Overview</span></div>
+        <div class="tr">
+          <div class="sync-b"><div class="sd"></div>Synced 2 min ago</div>
+          <button class="bti">↻</button><button class="bti">🔔</button>
+        </div>
+      </div>
+      <div class="pc">
+        <div class="ph fade-up">
+          <div class="pt">Good morning, Arjun 👋</div>
+          <div class="ps">Here's a snapshot of your projects · Tuesday, 25 March 2025</div>
+        </div>
+
+        <div class="al ar fade-up-1">
+          <span class="alico">🚨</span>
+          <div><strong>4 overdue tasks</strong> across your projects require immediate attention.</div>
+        </div>
+
+        <!-- KPI -->
+        <div class="kg">
+          <div class="kc bl fade-up-1" onclick="openModal('pm-kpi-projects')"><div class="ki">📁</div><div class="kl">My Projects</div><div class="kv">3</div><div class="ks">2 active · 1 at risk</div></div>
+          <div class="kc am fade-up-2" onclick="openModal('pm-kpi-overdue')"><div class="ki">⏰</div><div class="kl">Overdue Tasks</div><div class="kv">4</div><div class="ks">Across all projects</div></div>
+          <div class="kc gr fade-up-3" onclick="openModal('pm-kpi-completion')"><div class="ki">📈</div><div class="kl">Avg Completion</div><div class="kv">52%</div><div class="ks">Across 3 projects</div></div>
+          <div class="kc bl fade-up-4" onclick="openModal('pm-kpi-open')"><div class="ki">📅</div><div class="kl">Open Tasks</div><div class="kv">18</div><div class="ks">Across all projects</div></div>
+        </div>
+
+        <!-- PM CHARTS ROW -->
+        <div class="cg cg2 fade-up-5" style="margin-bottom:20px">
+
+          <!-- PM Chart 1: Task status by project -->
+          <div class="card">
+            <div class="ch">
+              <div><div class="ct">Task Status by Project</div><div class="csub">Click bars to drill into tasks</div></div>
+              <div class="leg">
+                <div class="lgi"><div class="lgd" style="background:var(--green)"></div>Closed</div>
+                <div class="lgi"><div class="lgd" style="background:var(--blue)"></div>In Progress</div>
+                <div class="lgi"><div class="lgd" style="background:var(--border-d)"></div>Open</div>
+                <div class="lgi"><div class="lgd" style="background:var(--red)"></div>Overdue</div>
+              </div>
+            </div>
+            <div class="cb">
+              <div class="chart-wrap" style="position:relative">
+                <div class="chart-tooltip" id="tt3"></div>
+                <svg viewBox="0 0 460 200" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="48" y1="18"  x2="440" y2="18"  stroke="#EDEBE9" stroke-width="1"/>
+                  <line x1="48" y1="52"  x2="440" y2="52"  stroke="#EDEBE9" stroke-width="1"/>
+                  <line x1="48" y1="86"  x2="440" y2="86"  stroke="#EDEBE9" stroke-width="1"/>
+                  <line x1="48" y1="120" x2="440" y2="120" stroke="#EDEBE9" stroke-width="1"/>
+                  <line x1="48" y1="154" x2="440" y2="154" stroke="#EDEBE9" stroke-width="1"/>
+                  <text x="40" y="21"  text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">12</text>
+                  <text x="40" y="55"  text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">9</text>
+                  <text x="40" y="89"  text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">6</text>
+                  <text x="40" y="123" text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">3</text>
+                  <text x="40" y="157" text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">0</text>
+                  <line x1="48" y1="18"  x2="48"  y2="154" stroke="#C8C6C4" stroke-width="1"/>
+                  <line x1="48" y1="154" x2="440" y2="154" stroke="#C8C6C4" stroke-width="1.5"/>
+                  <!-- MobiChord: C=8,IP=6,O=5,OD=4 (22 tasks) -->
+                  <!-- Scale: max=12 → 136px. Each bar=18px gap=4px. Group gap=20px -->
+                  <!-- Group 1 centre ~130 -->
+                  <g onclick="openProject()" style="cursor:pointer">
+                    <rect class="bar-interactive" x="60"  y="63"  width="18" height="91" rx="2" fill="#107C10" onmouseenter="showTip(event,'tt3','MobiChord · Closed: 8')" onmouseleave="hideTip('tt3')"/>
+                    <rect class="bar-interactive" x="82"  y="86"  width="18" height="68" rx="2" fill="#0078D4" onmouseenter="showTip(event,'tt3','MobiChord · In Progress: 6')" onmouseleave="hideTip('tt3')"/>
+                    <rect class="bar-interactive" x="104" y="97"  width="18" height="57" rx="2" fill="#C8C6C4" onmouseenter="showTip(event,'tt3','MobiChord · Open: 5')" onmouseleave="hideTip('tt3')"/>
+                    <rect class="bar-interactive" x="126" y="109" width="18" height="45" rx="2" fill="#A4262C" onmouseenter="showTip(event,'tt3','MobiChord · Overdue: 4')" onmouseleave="hideTip('tt3')"/>
+                    <text x="103" y="170" text-anchor="middle" font-size="9" font-weight="600" fill="#605E5C" font-family="Segoe UI">MobiChord</text>
+                  </g>
+                  <!-- DataWH: C=10,IP=5,O=8,OD=0 (23 tasks) -->
+                  <g onclick="openModal('pm-tasks-datawh')" style="cursor:pointer">
+                    <rect class="bar-interactive" x="200" y="41"  width="18" height="113" rx="2" fill="#107C10" onmouseenter="showTip(event,'tt3','Data WH · Closed: 10')" onmouseleave="hideTip('tt3')"/>
+                    <rect class="bar-interactive" x="222" y="97"  width="18" height="57"  rx="2" fill="#0078D4" onmouseenter="showTip(event,'tt3','Data WH · In Progress: 5')" onmouseleave="hideTip('tt3')"/>
+                    <rect class="bar-interactive" x="244" y="63"  width="18" height="91"  rx="2" fill="#C8C6C4" onmouseenter="showTip(event,'tt3','Data WH · Open: 8')" onmouseleave="hideTip('tt3')"/>
+                    <text x="233" y="170" text-anchor="middle" font-size="9" font-weight="600" fill="#605E5C" font-family="Segoe UI">Data WH</text>
+                  </g>
+                  <!-- Network: C=7,IP=5,O=6,OD=0 (18 tasks) -->
+                  <g onclick="openModal('pm-tasks-network')" style="cursor:pointer">
+                    <rect class="bar-interactive" x="330" y="75"  width="18" height="79" rx="2" fill="#107C10" onmouseenter="showTip(event,'tt3','Network · Closed: 7')" onmouseleave="hideTip('tt3')"/>
+                    <rect class="bar-interactive" x="352" y="97"  width="18" height="57" rx="2" fill="#0078D4" onmouseenter="showTip(event,'tt3','Network · In Progress: 5')" onmouseleave="hideTip('tt3')"/>
+                    <rect class="bar-interactive" x="374" y="86"  width="18" height="68" rx="2" fill="#C8C6C4" onmouseenter="showTip(event,'tt3','Network · Open: 6')" onmouseleave="hideTip('tt3')"/>
+                    <text x="363" y="170" text-anchor="middle" font-size="9" font-weight="600" fill="#605E5C" font-family="Segoe UI">Network Upg.</text>
+                  </g>
+                  <text x="10" y="85" text-anchor="middle" font-size="9" fill="#A19F9D" transform="rotate(-90,10,85)" font-family="Segoe UI">Task Count</text>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- PM Chart 2: Project completion gauge -->
+          <div class="card">
+            <div class="ch">
+              <div><div class="ct">Project Completion Overview</div><div class="csub">Click each project bar to view tasks</div></div>
+            </div>
+            <div class="cb">
+              <div style="display:flex;flex-direction:column;gap:16px;padding-top:4px">
+                <!-- MobiChord -->
+                <div style="cursor:pointer" onclick="openProject()">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <div>
+                      <div style="font-size:13px;font-weight:600">MobiChord Mobility</div>
+                      <div style="font-size:11px;color:var(--muted)">PRJ0010677 · Due 03 Jul 2025</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="badge bam"><span class="rag ra"></span>At Risk</span>
+                      <span style="font-size:16px;font-weight:700;color:var(--amber)">45%</span>
+                    </div>
+                  </div>
+                  <div style="position:relative;height:14px;background:var(--border);border-radius:7px;overflow:hidden">
+                    <div style="position:absolute;top:0;left:0;height:100%;width:45%;background:var(--amber);border-radius:7px;transition:width .8s ease"></div>
+                    <div style="position:absolute;top:0;left:0;height:100%;width:45%;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,.2) 4px,rgba(255,255,255,.2) 8px);border-radius:7px"></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>4 overdue tasks</span><span>22 total tasks</span></div>
+                </div>
+                <!-- Data WH -->
+                <div style="cursor:pointer" onclick="openModal('pm-project-datawh')">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <div>
+                      <div style="font-size:13px;font-weight:600">Data Warehouse Rebuild</div>
+                      <div style="font-size:11px;color:var(--muted)">PRJ0010445 · Due 20 Jun 2025</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="badge bgr"><span class="rag rg"></span>On Track</span>
+                      <span style="font-size:16px;font-weight:700;color:var(--green)">62%</span>
+                    </div>
+                  </div>
+                  <div style="position:relative;height:14px;background:var(--border);border-radius:7px;overflow:hidden">
+                    <div style="position:absolute;top:0;left:0;height:100%;width:62%;background:var(--green);border-radius:7px;transition:width .8s ease"></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>0 overdue tasks</span><span>23 total tasks</span></div>
+                </div>
+                <!-- Network -->
+                <div style="cursor:pointer" onclick="openModal('pm-project-network')">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <div>
+                      <div style="font-size:13px;font-weight:600">Network Infrastructure</div>
+                      <div style="font-size:11px;color:var(--muted)">PRJ0011204 · Due 15 Aug 2025</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="badge bgr"><span class="rag rg"></span>On Track</span>
+                      <span style="font-size:16px;font-weight:700;color:var(--green)">48%</span>
+                    </div>
+                  </div>
+                  <div style="position:relative;height:14px;background:var(--border);border-radius:7px;overflow:hidden">
+                    <div style="position:absolute;top:0;left:0;height:100%;width:48%;background:var(--blue);border-radius:7px;transition:width .8s ease"></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>0 overdue tasks</span><span>18 total tasks</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="card fade-up-5">
+          <div class="ch">
+            <div class="ct">Tasks Requiring Attention</div>
+            <span class="badge brd">4 overdue</span>
+          </div>
+          <div class="cb0">
+            <div class="tr2 ov"><div class="tc"></div><div class="ti"><div class="tn2">Define integration requirements</div><div class="tm">MobiChord · <span style="color:var(--red);font-weight:600">Due 10 Mar — 15 days overdue</span></div></div><div class="ta"><div class="mav">RK</div>R. King</div></div>
+            <div class="tr2 ov"><div class="tc"></div><div class="ti"><div class="tn2">Vendor sign-off on architecture</div><div class="tm">MobiChord · <span style="color:var(--red);font-weight:600">Due 15 Mar — 10 days overdue</span></div></div><div class="ta"><div class="mav" style="background:#5C2D91">LP</div>L. Park</div></div>
+            <div class="tr2 ov"><div class="tc"></div><div class="ti"><div class="tn2">Data schema finalisation</div><div class="tm">Data Warehouse · <span style="color:var(--red);font-weight:600">Due 18 Mar — 7 days overdue</span></div></div><div class="ta"><div class="mav" style="background:#107C10">TN</div>T. Nair</div></div>
+            <div class="tr2 ov"><div class="tc"></div><div class="ti"><div class="tn2">Stakeholder review deck</div><div class="tm">MobiChord · <span style="color:var(--red);font-weight:600">Due 20 Mar — 5 days overdue</span></div></div><div class="ta"><div class="mav" style="background:#7B4F12">AK</div>A. Kumar</div></div>
+            <div class="tr2"><div class="tc"></div><div class="ti"><div class="tn2">Sprint planning session</div><div class="tm">Network Upgrade · Due 28 Mar 2025</div></div><div class="ta"><div class="mav" style="background:#A4262C">SC</div>S. Chen</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROJECT DRILL-DOWN ══ -->
+<div id="project" class="screen">
+  <div class="shell">
+    <nav class="sidebar">
+      <div class="sb-hd">
+        <div class="sb-icon"><svg viewBox="0 0 16 16"><path d="M2 2h5v5H2zm7 0h5v5H9zM2 9h5v5H2zm7 0h5v5H9z"/></svg></div>
+        <span class="sb-name">PM Dashboard</span>
+      </div>
+      <div class="sb-nav">
+        <div class="sg">My Work</div>
+        <div class="ni"><span class="ico">🏠</span>My Overview</div>
+        <div class="ni active"><span class="ico">📁</span>My Projects<span class="nb bl">3</span></div>
+        <div class="ni"><span class="ico">✅</span>My Tasks<span class="nb">4</span></div>
+        <div class="ni"><span class="ico">📅</span>Milestones</div>
+      </div>
+      <div class="sb-user">
+        <div class="uav" style="background:#7B4F12">AK</div>
+        <div style="flex:1;min-width:0"><div class="un">Arjun Kumar</div><div class="ur">Project Manager</div></div>
+        <div class="so" onclick="signOut()">⎋</div>
+      </div>
+    </nav>
+    <div class="main">
+      <div class="topbar">
+        <div class="tbc">
+          <span style="font-size:13px;color:var(--blue);cursor:pointer" onclick="goBack()">My Projects</span>
+          <span class="cs">›</span>
+          <span class="ca">MobiChord Mobility Management</span>
+        </div>
+        <div class="tr">
+          <div class="sync-b"><div class="sd"></div>Synced 2 min ago</div>
+          <button class="bti">↻</button>
+          <button class="msbtn ghost">⬇ Export</button>
+        </div>
+      </div>
+      <div class="pc">
+        <button class="back" onclick="goBack()">← Back to My Projects</button>
+        <div class="dhdr">
+          <div class="dtop">
+            <div style="flex:1">
+              <div class="dnum">PRJ0010677 · ServiceNow Project</div>
+              <div class="dname">MobiChord Mobility Management</div>
+              <div class="dmr">
+                <div class="dmi">📅 <span>Start: <strong>23 Nov 2021</strong></span></div>
+                <div class="dmi">🏁 <span>End: <strong style="color:var(--red)">03 Jul 2025</strong></span></div>
+                <div class="dmi">👤 <span>PM: <strong>Arjun Kumar</strong></span></div>
+                <div class="dmi">🏢 <span>BU: <strong>Technology</strong></span></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+              <span class="badge bam" style="font-size:13px;padding:6px 12px"><span class="rag ra"></span>At Risk</span>
+              <span class="badge brd">Critical Priority</span>
+            </div>
+          </div>
+          <div class="dstats">
+            <div class="dst"><div class="dsl">Completion</div><div class="dsv" style="color:var(--amber)">45%</div><div class="pb" style="margin-top:6px"><div class="pf pam" style="width:45%"></div></div></div>
+            <div class="dst"><div class="dsl">Total Tasks</div><div class="dsv">22</div></div>
+            <div class="dst"><div class="dsl">Overdue Tasks</div><div class="dsv" style="color:var(--red)">4</div></div>
+            <div class="dst"><div class="dsl">Risk Level</div><div class="dsv" style="color:var(--amber);font-size:14px">Low</div></div>
+          </div>
+        </div>
+
+        <!-- Task chart in drill-down -->
+        <div class="card fade-up" style="margin-bottom:20px">
+          <div class="ch">
+            <div><div class="ct">Task Completion Over Time</div><div class="csub">Monthly task closure rate</div></div>
+          </div>
+          <div class="cb">
+            <div class="chart-wrap" style="position:relative">
+              <div class="chart-tooltip" id="tt4"></div>
+              <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#0078D4" stop-opacity=".15"/>
+                    <stop offset="100%" stop-color="#0078D4" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <!-- Gridlines -->
+                <line x1="50" y1="10"  x2="690" y2="10"  stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="50" y1="40"  x2="690" y2="40"  stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="50" y1="70"  x2="690" y2="70"  stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="50" y1="100" x2="690" y2="100" stroke="#EDEBE9" stroke-width="1"/>
+                <line x1="50" y1="130" x2="690" y2="130" stroke="#C8C6C4" stroke-width="1.5"/>
+                <text x="42" y="13"  text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">8</text>
+                <text x="42" y="43"  text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">6</text>
+                <text x="42" y="73"  text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">4</text>
+                <text x="42" y="103" text-anchor="end" font-size="9" fill="#A19F9D" font-family="Segoe UI">2</text>
+                <!-- Area fill -->
+                <polygon points="100,115 200,100 300,85 400,70 500,85 600,70 690,55 690,130 100,130" fill="url(#areaGrad)"/>
+                <!-- Line -->
+                <polyline points="100,115 200,100 300,85 400,70 500,85 600,70 690,55" fill="none" stroke="#0078D4" stroke-width="2" stroke-linejoin="round"/>
+                <!-- Dots -->
+                <circle class="bar-interactive" cx="100" cy="115" r="5" fill="white" stroke="#0078D4" stroke-width="2" onmouseenter="showTip(event,'tt4','Nov 2024 · 2 tasks closed')" onmouseleave="hideTip('tt4')"/>
+                <circle class="bar-interactive" cx="200" cy="100" r="5" fill="white" stroke="#0078D4" stroke-width="2" onmouseenter="showTip(event,'tt4','Dec 2024 · 3 tasks closed')" onmouseleave="hideTip('tt4')"/>
+                <circle class="bar-interactive" cx="300" cy="85"  r="5" fill="white" stroke="#0078D4" stroke-width="2" onmouseenter="showTip(event,'tt4','Jan 2025 · 4 tasks closed')" onmouseleave="hideTip('tt4')"/>
+                <circle class="bar-interactive" cx="400" cy="70"  r="5" fill="#0078D4" stroke="#0078D4" stroke-width="2" onmouseenter="showTip(event,'tt4','Feb 2025 · 5 tasks closed')" onmouseleave="hideTip('tt4')"/>
+                <circle class="bar-interactive" cx="500" cy="85"  r="5" fill="white" stroke="#D83B01" stroke-width="2" onmouseenter="showTip(event,'tt4','Mar 2025 · 4 tasks closed (dip)')" onmouseleave="hideTip('tt4')"/>
+                <circle class="bar-interactive" cx="600" cy="70"  r="5" fill="white" stroke="#0078D4" stroke-width="2" onmouseenter="showTip(event,'tt4','Apr 2025 · 5 tasks forecast')" onmouseleave="hideTip('tt4')"/>
+                <circle class="bar-interactive" cx="690" cy="55"  r="5" fill="white" stroke="#0078D4" stroke-width="2" stroke-dasharray="3 2" onmouseenter="showTip(event,'tt4','May 2025 · 6 tasks forecast')" onmouseleave="hideTip('tt4')"/>
+                <!-- X labels -->
+                <text x="100" y="145" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">Nov</text>
+                <text x="200" y="145" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">Dec</text>
+                <text x="300" y="145" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">Jan</text>
+                <text x="400" y="145" text-anchor="middle" font-size="9" fill="#605E5C" font-family="Segoe UI">Feb</text>
+                <text x="500" y="145" text-anchor="middle" font-size="9" fill="#D83B01" font-family="Segoe UI" font-weight="600">Mar ⚠</text>
+                <text x="600" y="145" text-anchor="middle" font-size="9" fill="#A19F9D" font-family="Segoe UI">Apr ·</text>
+                <text x="690" y="145" text-anchor="middle" font-size="9" fill="#A19F9D" font-family="Segoe UI">May ·</text>
+                <!-- Forecast label -->
+                <line x1="555" y1="10" x2="555" y2="130" stroke="#A19F9D" stroke-width="1" stroke-dasharray="4 3"/>
+                <text x="560" y="22" font-size="9" fill="#A19F9D" font-family="Segoe UI" font-style="italic">Forecast →</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('tasks',this)">Tasks (22)</div>
+          <div class="tab" onclick="switchTab('overview',this)">Overview</div>
+          <div class="tab" onclick="switchTab('team',this)">Team (5)</div>
+        </div>
+
+        <div id="tab-tasks">
+          <div class="al aw"><span class="alico">⚠️</span><div><strong>4 tasks are overdue</strong> — highlighted below. Update states or revise dates.</div></div>
+          <div class="card">
+            <div class="cb0">
+              <table class="tbl">
+                <thead><tr><th></th><th>Task</th><th>State</th><th>Priority</th><th>Assignee</th><th>Due Date</th><th>Progress</th></tr></thead>
+                <tbody>
+                  <tr style="background:#FFF4F4"><td><div class="tc"></div></td><td><div style="font-weight:600">Define integration requirements</div><div style="font-size:11px;color:var(--muted);font-family:var(--mono)">PRJTASK0010298</div></td><td><span class="badge brd">Open</span></td><td><span class="badge brd">Critical</span></td><td><div class="ta"><div class="mav">RK</div>R. King</div></td><td style="font-size:12px;color:var(--red);font-weight:600">10 Mar 2025 ⚠️</td><td><div class="pb" style="width:70px"><div class="pf prd" style="width:20%"></div></div><div style="font-size:10px;color:var(--muted)">20%</div></td></tr>
+                  <tr style="background:#FFF4F4"><td><div class="tc"></div></td><td><div style="font-weight:600">Vendor sign-off on architecture</div><div style="font-size:11px;color:var(--muted);font-family:var(--mono)">PRJTASK0010299</div></td><td><span class="badge bam">In Progress</span></td><td><span class="badge brd">Critical</span></td><td><div class="ta"><div class="mav" style="background:#5C2D91">LP</div>L. Park</div></td><td style="font-size:12px;color:var(--red);font-weight:600">15 Mar 2025 ⚠️</td><td><div class="pb" style="width:70px"><div class="pf prd" style="width:50%"></div></div><div style="font-size:10px;color:var(--muted)">50%</div></td></tr>
+                  <tr><td><div class="tc"></div></td><td><div style="font-weight:600">Planning</div><div style="font-size:11px;color:var(--muted);font-family:var(--mono)">PRJTASK0010301</div></td><td><span class="badge btl">Closed</span></td><td><span class="badge bgy">Low</span></td><td><div class="ta"><div class="mav" style="background:#107C10">TN</div>T. Nair</div></td><td style="font-size:12px">09 Jul 2021</td><td><div class="pb" style="width:70px"><div class="pf pg" style="width:100%"></div></div><div style="font-size:10px;color:var(--muted)">100%</div></td></tr>
+                  <tr><td><div class="tc"></div></td><td><div style="font-weight:600">Carrier data integration spec</div><div style="font-size:11px;color:var(--muted);font-family:var(--mono)">PRJTASK0010302</div></td><td><span class="badge bam">In Progress</span></td><td><span class="badge bam">High</span></td><td><div class="ta"><div class="mav" style="background:#5C2D91">LP</div>L. Park</div></td><td style="font-size:12px">10 Apr 2025</td><td><div class="pb" style="width:70px"><div class="pf pbl" style="width:30%"></div></div><div style="font-size:10px;color:var(--muted)">30%</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="tab-overview" style="display:none">
+          <div class="cg cg2">
+            <div class="card"><div class="ch"><div class="ct">Project Description</div></div><div class="cb"><p style="font-size:13px;color:var(--text2);line-height:1.7">Implementation of MobiChord front-end portal to enable end users to request a new line of service, upgrade an existing device, and automate the payment process.</p><div style="margin-top:16px;display:flex;flex-direction:column;gap:8px"><div style="font-size:12px;display:flex;gap:8px"><span style="color:var(--muted);width:120px">Type</span><strong>Regular · Waterfall</strong></div><div style="font-size:12px;display:flex;gap:8px"><span style="color:var(--muted);width:120px">Budget</span><strong>$1,322,270</strong></div><div style="font-size:12px;display:flex;gap:8px"><span style="color:var(--muted);width:120px">Forecast</span><strong>$1,271,600</strong></div></div></div></div>
+            <div class="card"><div class="ch"><div class="ct">Task Status Breakdown</div></div><div class="cb"><div style="display:flex;flex-direction:column;gap:12px"><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--green);font-weight:600">Closed</span><span>8 tasks</span></div><div class="pb"><div class="pf pg" style="width:36%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--blue);font-weight:600">In Progress</span><span>6 tasks</span></div><div class="pb"><div class="pf pbl" style="width:27%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text2);font-weight:600">Open</span><span>4 tasks</span></div><div class="pb"><div class="pf" style="width:18%;background:var(--border-d)"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--red);font-weight:600">Overdue</span><span>4 tasks</span></div><div class="pb"><div class="pf prd" style="width:18%"></div></div></div></div></div></div>
+          </div>
+        </div>
+        <div id="tab-team" style="display:none">
+          <div class="card"><div class="ch"><div class="ct">Project Team</div><span class="badge bbl">5 members</span></div><div class="cb0"><table class="tbl"><thead><tr><th>Member</th><th>Role</th><th>Tasks</th><th>Overdue</th><th>Completion</th></tr></thead><tbody>
+          <tr><td><div class="ta"><div class="mav" style="background:#7B4F12;width:32px;height:32px;font-size:12px">AK</div><div><div style="font-weight:600">Arjun Kumar</div><div style="font-size:11px;color:var(--muted)">Project Manager</div></div></div></td><td><span class="badge bbl">PM</span></td><td style="font-weight:600">6</td><td style="color:var(--red);font-weight:600">1</td><td><div class="pb" style="width:80px"><div class="pf pam" style="width:50%"></div></div></td></tr>
+          <tr><td><div class="ta"><div class="mav" style="width:32px;height:32px;font-size:12px">RK</div><div><div style="font-weight:600">Rachel King</div><div style="font-size:11px;color:var(--muted)">Analyst</div></div></div></td><td><span class="badge bgy">Analyst</span></td><td style="font-weight:600">5</td><td style="color:var(--red);font-weight:600">1</td><td><div class="pb" style="width:80px"><div class="pf prd" style="width:30%"></div></div></td></tr>
+          <tr><td><div class="ta"><div class="mav" style="background:#5C2D91;width:32px;height:32px;font-size:12px">LP</div><div><div style="font-weight:600">Lena Park</div><div style="font-size:11px;color:var(--muted)">Tech Lead</div></div></div></td><td><span class="badge bgy">Tech Lead</span></td><td style="font-weight:600">7</td><td style="color:var(--red);font-weight:600">2</td><td><div class="pb" style="width:80px"><div class="pf pam" style="width:45%"></div></div></td></tr>
+          </tbody></table></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DRILL-DOWN MODAL ══ -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="mtitle" id="modal-title">Detail</div>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbody" id="modal-body"></div>
+    <div class="mfooter">
+      <button class="msbtn ghost" onclick="closeModal()">Close</button>
+      <button class="msbtn" onclick="openProject();closeModal()">Open Full View →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// PM dashboard is the default active view
+document.getElementById('pm').classList.add('active');
+
+// ── TABS ──
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['tasks','overview','team'].forEach(t => {
+    const el2 = document.getElementById('tab-' + t);
+    if (el2) el2.style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+// ── TOOLTIP ──
+function showTip(e, id, text) {
+  const tt = document.getElementById(id);
+  if (!tt) return;
+  const wrap = tt.parentElement.getBoundingClientRect();
+  tt.textContent = text;
+  tt.style.left = (e.clientX - wrap.left + 10) + 'px';
+  tt.style.top  = (e.clientY - wrap.top  - 36) + 'px';
+  tt.classList.add('show');
+}
+function hideTip(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+}
+
+// ── NAVIGATION ──
+function openProject() {
+  document.getElementById('pm').classList.remove('active');
+  document.getElementById('project').classList.add('active');
+  window.scrollTo(0,0);
+}
+function goBack() {
+  document.getElementById('project').classList.remove('active');
+  document.getElementById('pm').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── MODAL DATA ──
+const modalData = {
+  'pm-kpi-projects':   { title: 'My 3 Projects', body: buildMyProjects() },
+  'pm-kpi-overdue':    { title: '4 Overdue Tasks', body: buildOverdueTasks() },
+  'pm-kpi-completion': { title: 'Avg Completion: 52%', body: buildCompletionBreakdown() },
+  'pm-kpi-open':       { title: '18 Open Tasks', body: buildOpenTasks() },
+  'pm-tasks-datawh':   { title: 'Data Warehouse — Task Breakdown', body: buildTaskBreakdown('Data Warehouse Rebuild') },
+  'pm-tasks-network':  { title: 'Network Upgrade — Task Breakdown', body: buildTaskBreakdown('Network Infrastructure Upgrade') },
+  'pm-project-datawh': { title: 'Data Warehouse Rebuild', body: buildProjectSummary('Data Warehouse Rebuild', 62, 'On Track') },
+  'pm-project-network':{ title: 'Network Infrastructure Upgrade', body: buildProjectSummary('Network Infrastructure Upgrade', 48, 'On Track') },
+};
+
+function buildMyProjects() {
+  return [{n:'MobiChord Mobility',p:45,s:'At Risk',sc:'bam'},{n:'Data Warehouse Rebuild',p:62,s:'On Track',sc:'bgr'},{n:'Network Infrastructure',p:48,s:'On Track',sc:'bgr'}].map(p=>`
+    <div style="background:#FAF9F8;border:1px solid #EDEBE9;border-radius:8px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:600">${p.n}</div>
+        <span class="badge ${p.sc}">${p.s}</span>
+      </div>
+      <div class="pb"><div class="pf ${p.sc==='bgr'?'pg':'pam'}" style="width:${p.p}%"></div></div>
+      <div style="font-size:10px;color:#A19F9D;margin-top:3px">${p.p}% complete</div>
+    </div>`).join('');
+}
+
+function buildOverdueTasks() {
+  return ['Define integration requirements','Vendor sign-off on architecture','Data schema finalisation','Stakeholder review deck'].map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EDEBE9;background:#FFF4F4">
+      <div style="width:16px;height:16px;border:1.5px solid #C8C6C4;border-radius:2px;flex-shrink:0"></div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${t}</div>
+        <div style="font-size:11px;color:#A4262C;font-weight:600">${(i+1)*3+2} days overdue</div>
+      </div>
+      <span class="badge brd">Overdue</span>
+    </div>`).join('');
+}
+
+function buildCompletionBreakdown() {
+  return [{n:'MobiChord Mobility',p:45,c:'pam'},{n:'Data Warehouse Rebuild',p:62,c:'pg'},{n:'Network Infrastructure',p:48,c:'pbl'}].map(p=>`
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><strong>${p.n}</strong><span style="font-weight:700">${p.p}%</span></div>
+      <div class="pb" style="height:10px"><div class="pf ${p.c}" style="width:${p.p}%"></div></div>
+    </div>`).join('') +
+    `<div style="border-top:1px solid #EDEBE9;padding-top:12px;display:flex;justify-content:space-between;font-size:13px"><strong>Overall Average</strong><strong style="color:#0078D4">52%</strong></div>`;
+}
+
+function buildOpenTasks() {
+  return `<div style="padding:10px 14px;background:#EFF6FC;border:1px solid #C7E0F4;border-radius:4px;margin-bottom:12px;font-size:13px;color:#005A9E">ℹ️ 18 open tasks across 3 projects — 4 are overdue.</div>` +
+    [['MobiChord Mobility',10],['Data Warehouse Rebuild',5],['Network Infrastructure',3]].map(([n,c])=>`
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #EDEBE9">
+      <span style="font-size:13px;font-weight:500">${n}</span>
+      <span class="badge bbl">${c} open</span>
+    </div>`).join('');
+}
+
+function buildTaskBreakdown(project) {
+  return `<div style="font-weight:600;margin-bottom:12px">${project}</div>` +
+    [['Closed','pg',10],['In Progress','pbl',5],['Open','',8]].map(([s,c,n])=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${s}</span><span>${n} tasks</span></div>
+      <div class="pb"><div class="pf ${c}" style="width:${Math.round(n/23*100)}%;${!c?'background:var(--border-d)':''}"></div></div>
+    </div>`).join('');
+}
+
+function buildProjectSummary(name, pct, status) {
+  return `
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:40px;font-weight:700;color:${pct>=60?'#107C10':'#D83B01'}">${pct}%</div>
+      <div style="font-size:13px;color:#605E5C;margin:4px 0 16px">completion</div>
+      <span class="badge ${status==='On Track'?'bgr':'bam'}" style="font-size:13px;padding:6px 14px">${status}</span>
+    </div>
+    <div class="pb" style="height:12px;margin-bottom:16px"><div class="pf ${pct>=60?'pg':'pbl'}" style="width:${pct}%"></div></div>
+    ${buildTaskBreakdown(name)}`;
+}
+
+function openModal(key) {
+  const d = modalData[key];
+  if (!d) return;
+  document.getElementById('modal-title').textContent = d.title;
+  document.getElementById('modal-body').innerHTML = d.body;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function closeModalOutside(e) { if(e.target.id==='modal') closeModal(); }
+
+function signOut() { window.location.href = 'index.html'; }
+</script>
+</body>
+</html>
